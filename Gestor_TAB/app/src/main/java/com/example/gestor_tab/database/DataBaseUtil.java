@@ -196,6 +196,9 @@ public class DataBaseUtil {
         String tipoPagamento;
         float despesa[] = new float[8];
         String coordenadas;
+        String ativo;
+        String dataInicio;
+        String dataFim;
 
         final ArrayList<Cliente> clienteArrayList = new ArrayList<>();
 
@@ -232,6 +235,10 @@ public class DataBaseUtil {
 
                 coordenadas = sheet.getCell(TablePosition.COORDENADAS.getValue(),i).getContents();
 
+                ativo = sheet.getCell(TablePosition.ATIVO.getValue(),i).getContents();
+                dataInicio = sheet.getCell(TablePosition.INICIO_INITAVIDADE.getValue(),i).getContents();
+                dataFim = sheet.getCell(TablePosition.FIM_INITAVIDADE.getValue(),i).getContents();
+
                 clienteArrayList.add(new Cliente(name, number, pagamento, tipoPagamento, despesa));
 
                 if (!coordenadas.equals("null")) {
@@ -239,6 +246,15 @@ public class DataBaseUtil {
                     coordenadas = replaceOccurance(coordenadas, ",", ".", 2);*/
 
                     clienteArrayList.get(clienteArrayList.size()-1).setCoordenadas(coordenadas);
+                }
+
+                if (ativo.equals("1"))
+                    clienteArrayList.get(clienteArrayList.size()-1).setAtivo(true);
+                else
+                    clienteArrayList.get(clienteArrayList.size()-1).setAtivo(false);
+
+                if (!dataInicio.equals("-") && !dataFim.equals("-")) {
+                    clienteArrayList.get(clienteArrayList.size()-1).setAtivo(dataInicio, dataFim);
                 }
             }
         }
@@ -292,6 +308,10 @@ public class DataBaseUtil {
         Label labe11 = new Label(TablePosition.DOMINGO.getValue(),0,"DOM");
         Label labe12 = new Label(TablePosition.EXTRAS.getValue(),0,"EXTRAS");
         Label labe13 = new Label(TablePosition.COORDENADAS.getValue(),0,"Coordenadas");
+        Label labe14 = new Label(TablePosition.ATIVO.getValue(),0,"Ativo");
+        Label labe15 = new Label(TablePosition.INICIO_INITAVIDADE.getValue(),0,"Inicio Inatividade");
+        Label labe16 = new Label(TablePosition.FIM_INITAVIDADE.getValue(),0,"Fim Inatividade");
+
 
         try {
             plan.addCell(label);
@@ -307,13 +327,15 @@ public class DataBaseUtil {
             plan.addCell(labe11);
             plan.addCell(labe12);
             plan.addCell(labe13);
+            plan.addCell(labe14);
+            plan.addCell(labe15);
+            plan.addCell(labe16);
 
         } catch (RowsExceededException e1) {
             e1.printStackTrace();
         } catch (WriteException e1) {
             e1.printStackTrace();
         }
-
 
         for (int i=1;i<=clientes.size();i++){
             label = new Label(TablePosition.NOME.getValue(),i,clientes.get(i-1).getName());
@@ -338,6 +360,15 @@ public class DataBaseUtil {
                 labe13 = new Label(TablePosition.COORDENADAS.getValue(), i, "null");
             }
 
+            if (clientes.get(i-1).getAtivo()) {
+                labe14 = new Label(TablePosition.ATIVO.getValue(), i, "1");
+            } else {
+                labe14 = new Label(TablePosition.ATIVO.getValue(), i, "0");
+            }
+
+            labe15 = new Label(TablePosition.INICIO_INITAVIDADE.getValue(), i, clientes.get(i-1).getInicioInatividade());
+            labe16 = new Label(TablePosition.FIM_INITAVIDADE.getValue(), i, clientes.get(i-1).getFimInatividade());
+
             try {
                 plan.addCell(label);
                 plan.addCell(labe2);
@@ -354,6 +385,10 @@ public class DataBaseUtil {
                 plan.addCell(labe12);
 
                 plan.addCell(labe13);
+                plan.addCell(labe14);
+
+                plan.addCell(labe15);
+                plan.addCell(labe16);
 
             } catch (RowsExceededException e1) {
                 e1.printStackTrace();

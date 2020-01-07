@@ -5,7 +5,7 @@
         <!-- Search / will display always -->
         <item android:id="@+id/action_search"
             android:title="Search"
-            android:icon="@drawable/search"
+            android:icon="@drawable/gps"
             app:showAsAction="ifRoom" />
 
         <item android:id="@+id/encomenda"

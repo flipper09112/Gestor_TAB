@@ -56,4 +56,13 @@ public class ClientsManager {
         }
         return "Not Found";
     }
+
+    public Cliente getClienteId(int id) {
+        for (Cliente cliente : this.clientsList) {
+            if (cliente.getId() == id) {
+                return cliente;
+            }
+        }
+        return null;
+    }
 }

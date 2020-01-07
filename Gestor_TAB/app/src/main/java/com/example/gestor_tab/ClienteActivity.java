@@ -754,7 +754,7 @@ public class ClienteActivity extends AppCompatActivity {
             //setDataOnScreenLD(false);
         } else {
             Toast.makeText(getApplicationContext(), "Operação errada: sem dados novos", Toast.LENGTH_SHORT).show();
-            ;
+
         }
 
     }
@@ -872,6 +872,11 @@ public class ClienteActivity extends AppCompatActivity {
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         Date date = new Date();
         EditText editText = findViewById(R.id.lat);
+
+        if (editText.getText().toString().equals("NaN")) {
+            Toast.makeText(getApplicationContext(),"Operação impossivel (sem localização)",Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         String oldLocalizacao;
         if (this.cliente.getCoordenadas() == null)

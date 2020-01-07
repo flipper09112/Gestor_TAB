@@ -13,7 +13,10 @@ public enum TablePosition {
     SABADO(9),
     DOMINGO(10),
     EXTRAS(11),
-    COORDENADAS(12);
+    COORDENADAS(12),
+    ATIVO(13),
+    INICIO_INITAVIDADE(14),
+    FIM_INITAVIDADE(15);
 
     private final int value;
 
