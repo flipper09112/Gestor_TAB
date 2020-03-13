@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.gestor_tab">
+
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -16,21 +17,26 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity
+            android:name=".ui.login.LoginActivity"
+            android:label="@string/title_activity_login"></activity>
 
-        <activity android:name=".notifications.NotificationActivity"></activity>
-        <activity android:name=".EditClientActivity" />
-        <activity android:name=".ClienteActivity" />
-        <activity android:name=".MainActivity">
+        <service
+            android:name=".GPSIntentService"
+            android:exported="false" />
+
+        <activity android:name=".activitys.EncomendaActivity" />
+        <activity android:name=".activitys.EditClientActivity" />
+        <activity android:name=".activitys.ClienteActivity" />
+        <activity android:name=".activitys.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <receiver
-            android:name=".notifications.AlarmReceiver">
-        </receiver>
 
+        <receiver android:name=".activitys.notifications.AlarmReceiver" />
     </application>
 
 </manifest>

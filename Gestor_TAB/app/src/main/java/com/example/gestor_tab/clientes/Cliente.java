@@ -34,6 +34,11 @@ public class Cliente implements Serializable{
     private double lat = 0;
     private double lng = 0;
 
+    private boolean ativo = true;
+
+    private Date inicioInatividade = null;
+    private Date fimInatividade = null;
+
     private int noPorta;
 
     public float[] getDespesa() {
@@ -46,6 +51,56 @@ public class Cliente implements Serializable{
         this.pagamento = pagamento;
         this.tipoPagamento = tipoPagamento;
         this.despesa = Arrays.copyOf(despesa, despesa.length);
+
+    }
+
+    public String getInicioInatividade() {
+        if (this.inicioInatividade != null) {
+            return formatter.format(this.inicioInatividade);
+        } else {
+            return "-";
+        }
+    }
+
+    public String getFimInatividade() {
+        if (this.fimInatividade != null) {
+            return formatter.format(this.fimInatividade);
+        } else {
+            return "-";
+        }
+    }
+
+    public void setAtivo(final String date1, final String date2) {
+        Date date = new Date();
+        String dateSemHoras = formatter.format(date);
+        try {
+            date = formatter.parse(dateSemHoras);
+            if (!date1.equals("-") && !date2.equals("-")) {
+
+                this.inicioInatividade = formatter.parse(date1);
+                this.fimInatividade = formatter.parse(date2);
+
+                if ((date.after(this.inicioInatividade) || date.equals(this.inicioInatividade)) && date.before(this.fimInatividade)) {
+                    this.ativo = false;
+                } else {
+                    this.ativo = true;
+                    this.inicioInatividade = null;
+                    this.fimInatividade = null;
+                    //TODO notification
+                }
+
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setAtivo(final boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    public boolean getAtivo() {
+        return this.ativo;
     }
 
     public void setCoordenadas(final String coordenadas) {
@@ -75,7 +130,11 @@ public class Cliente implements Serializable{
 
     @Override
     public String toString() {
-        return "Nome:   " + this.name.toUpperCase() + "\n" + "ID:  " + this.id;
+        if (this.getCoordenadas() != null) {
+            return "Nome:   " + this.name.toUpperCase() + "\n" + "ID:  " + this.id;
+        } else {
+            return "Nome:   " + this.name.toUpperCase() + "\nLocalização:   SEM LOCALIZAÇÃO\n" + "ID:  " + this.id;
+        }
     }
 
     public String getName() {
@@ -313,6 +372,8 @@ public class Cliente implements Serializable{
             return "Mensal";
         else if (tipoPagamento.equals("D"))
             return "Diário";
+        else if (tipoPagamento.equals("LS"))
+            return "Loja Semanal";
         else
             return "error";
     }
@@ -472,5 +533,9 @@ public class Cliente implements Serializable{
 
     public double getLng() {
         return this.lng;
+    }
+
+    public void setAtivo() {
+        this.ativo = !this.ativo;
     }
 }

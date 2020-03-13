@@ -1,6 +1,11 @@
 package com.example.gestor_tab.clientes;
 
+import android.content.Context;
+
 import java.util.ArrayList;
+import java.util.Calendar;
+
+import static com.example.gestor_tab.database.LogsBaseUtil.logs;
 
 public class ClientsManager {
 
@@ -44,7 +49,18 @@ public class ClientsManager {
         clientsList.add(pos, newCliente);
     }
 
-    public void removeCliente(int pos) {
+    public void removeCliente(Context applicationContext, int pos) {
+        Cliente cliente = clientsList.get(pos);
+        // Get Current Date
+        final Calendar c = Calendar.getInstance();
+        int mYear = c.get(Calendar.YEAR);
+        int mMonth = c.get(Calendar.MONTH);
+        int mDay = c.get(Calendar.DAY_OF_MONTH);
+        String date = mDay + "/" + (mMonth + 1) + "/" + mYear;
+
+        String info = "Removido um cliente ("+cliente.getName()+") " + "com id ("+cliente.getId()+")-" + date;
+
+        logs(applicationContext, 9, cliente.getId(), info);
         clientsList.remove(pos);
     }
 

@@ -6,14 +6,17 @@ public class TabelaPrecos {
 
     ArrayList<String> produtos;
 
+    ArrayList<Integer> isUnity;
+
     ArrayList<Float> precos;
 
     ArrayList<Integer> clientes;
 
     ArrayList<ArrayList<Float>> listPrecosClientes;
 
-    public TabelaPrecos(final ArrayList produtos, final ArrayList precos) {
+    public TabelaPrecos(final ArrayList produtos, final ArrayList isUnity ,final ArrayList precos) {
         this.produtos = produtos;
+        this.isUnity = isUnity;
         this.precos = precos;
         this.clientes = new ArrayList<>();
         this.listPrecosClientes = new ArrayList<>();
@@ -44,5 +47,21 @@ public class TabelaPrecos {
 
     public int getIdProduto(String toString) {
         return this.produtos.indexOf(toString);
+    }
+
+    public boolean verificaCliente(int id) {
+        for (int clienteID : clientes) {
+            if (clienteID == id)
+                return true;
+        }
+        return false;
+    }
+
+    public boolean getProdutosIsUnit(int position) {
+        if (this.isUnity.get(position) == 1) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

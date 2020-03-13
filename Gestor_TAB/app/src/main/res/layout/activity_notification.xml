@@ -4,18 +4,34 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".notifications.NotificationActivity">
+    tools:context=".activitys.EncomendaActivity">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_constraintStart_toStartOf="parent">
 
+        <TextView
+            android:id="@+id/textView36"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/sobrasInfo"
+            android:layout_marginStart="0dp"
+            android:layout_marginEnd="0dp"
+            android:layout_marginBottom="0dp"
+            android:layout_toStartOf="@+id/button4"
+            android:layout_toEndOf="@+id/scroll"
+            android:textAlignment="center"
+            android:textSize="25sp"
+            android:textColor="@color/colorAccent"
+            android:textColorHighlight="@color/colorAccent"
+            android:text="Registo de sobras" />
+
         <ListView
             android:id="@+id/listaBolos"
             android:layout_width="350dp"
             android:layout_height="588dp"
-            android:layout_above="@+id/button11"
+            android:layout_above="@+id/textView36"
             android:layout_below="@+id/textView13"
             android:layout_marginStart="0dp"
             android:layout_marginTop="0dp"
@@ -480,20 +496,6 @@
             android:onClick="sendEmail"
             android:text="Enviar" />
 
-        <Button
-            android:id="@+id/button11"
-            android:layout_width="280dp"
-            android:layout_height="100dp"
-            android:layout_alignParentBottom="true"
-            android:layout_marginStart="0dp"
-            android:layout_marginEnd="0dp"
-            android:layout_marginBottom="-1dp"
-            android:layout_toStartOf="@+id/button4"
-            android:layout_toEndOf="@+id/scroll"
-            android:autoSizeMaxTextSize="32sp"
-            android:autoSizeTextType="uniform"
-            android:text="Cálculo Despesa" />
-
         <ListView
             android:id="@+id/lista"
             android:layout_width="280dp"
@@ -504,6 +506,20 @@
             android:layout_marginTop="0dp"
             android:layout_marginEnd="7dp"
             android:layout_marginBottom="0dp" />
+
+        <TextView
+            android:id="@+id/sobrasInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="0dp"
+            android:layout_marginEnd="0dp"
+            android:layout_marginBottom="0dp"
+            android:layout_toStartOf="@+id/button4"
+            android:layout_toEndOf="@+id/scroll"
+            android:autoSizeTextType="uniform"
+            android:text="TextView"
+            android:textAlignment="center" />
 
     </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".EditClientActivity">
+    tools:context=".activitys.EditClientActivity">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -271,6 +271,87 @@
                     android:layout_height="match_parent">
 
                     <LinearLayout
+                        android:id="@+id/tab5"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+
+                        <ScrollView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/textView31"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="Tipo de pagamento"
+                                    android:textAlignment="center"
+                                    android:textSize="25sp" />
+
+                                <RadioGroup
+                                    android:id="@+id/radioG"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent">
+
+                                    <RadioButton
+                                        android:id="@+id/diario"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="Diário" />
+
+                                    <RadioButton
+                                        android:id="@+id/semanal"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="Semanal" />
+
+                                    <RadioButton
+                                        android:id="@+id/mensal"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="Mensal" />
+
+                                    <RadioButton
+                                        android:id="@+id/lojaSemanal"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="Loja Semanal" />
+
+                                    <RadioButton
+                                        android:id="@+id/especial"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="Especial (Indisponivel)" />
+                                </RadioGroup>
+
+                                <TextView
+                                    android:id="@+id/textView33"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="Número de porta"
+                                    android:textAlignment="center"
+                                    android:textSize="25sp" />
+
+                                <EditText
+                                    android:id="@+id/editText5"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:ems="10"
+                                    android:textAlignment="center"
+                                    android:inputType="number"
+                                    android:text="Name" />
+
+                            </LinearLayout>
+                        </ScrollView>
+
+                    </LinearLayout>
+
+                    <LinearLayout
                         android:id="@+id/tab6"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
@@ -305,55 +386,6 @@
                             android:layout_height="wrap_content"
                             android:ems="10"
                             android:inputType="numberDecimal" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/tab5"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">
-
-                        <ScrollView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical">
-
-                                <RadioGroup
-                                    android:id="@+id/radioG"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent">
-
-                                    <RadioButton
-                                        android:id="@+id/diario"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:text="Diário" />
-
-                                    <RadioButton
-                                        android:id="@+id/semanal"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:text="Semanal" />
-
-                                    <RadioButton
-                                        android:id="@+id/mensal"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:text="Mensal" />
-
-                                    <RadioButton
-                                        android:id="@+id/especial"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:text="Especial (Indisponivel)" />
-                                </RadioGroup>
-                            </LinearLayout>
-                        </ScrollView>
-
                     </LinearLayout>
 
                     <LinearLayout

@@ -4,36 +4,28 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.view.View;
-import android.widget.Adapter;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
-
-import com.example.gestor_tab.ClienteActivity;
 import com.example.gestor_tab.R;
 import com.example.gestor_tab.clientes.Cliente;
+import com.example.gestor_tab.clientes.Registo;
+import com.example.gestor_tab.clientes.RegistosManager;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
-import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.example.gestor_tab.database.DataBaseUtil.logs;
+import static com.example.gestor_tab.database.LogsBaseUtil.getLogsClient;
 
 public class Connection_bt {
 
@@ -150,7 +142,7 @@ public class Connection_bt {
             t1.setText("Descrição[001]\nDispositivo não ligado!");
         }
     }
-    private void sendData() {
+    private void sendData(boolean loja) {
         try {
             byte[] center =  { 0x1b, 'a', 0x01 }; // center alignment
             byte[] left= {0x1B, 'a',0x00};
@@ -179,7 +171,11 @@ public class Connection_bt {
             mmOutputStream.write(left);
             mmOutputStream.write(separador.getBytes());
 
-            tabela(separador);
+            if(loja) {
+                descricao(separador);
+            } else {
+                tabela(separador);
+            }
 
             mmOutputStream.write(left);
             mmOutputStream.write(separador.getBytes());
@@ -199,6 +195,66 @@ public class Connection_bt {
             activity.setContentView(R.layout.error_template);
             TextView t1=(TextView)this.activity.findViewById(R.id.textView27);
             t1.setText("Descrição[005]\nDispositivo desligado ou não encontrado!");
+        }
+    }
+
+    private void descricao(String separador) {
+        RegistosManager registosManager = getLogsClient(activity.getApplicationContext(), cliente.getId());
+        Spinner dia2Spiner = activity.findViewById(R.id.spinner);
+        String texto = "";
+        String temp = "";
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+        Calendar calInicio = Calendar.getInstance();
+        Calendar calFim = Calendar.getInstance();
+        try {
+            calInicio.setTime(sdf.parse(cliente.getPagamentoPlusOneDay()));
+            calFim.setTime(sdf.parse(dia2Spiner.getSelectedItem().toString()));
+        } catch (ParseException e) {
+            activity.setContentView(R.layout.error_template);
+            TextView t1=(TextView)this.activity.findViewById(R.id.textView27);
+            t1.setText("Descrição\nErro na ultima data de pagamento do cliente!");
+        }
+
+        byte[] center =  { 0x1b, 'a', 0x01 }; // center alignment
+        byte[] left= {0x1B, 'a',0x00};
+        byte[] format = {29, 33, 35 }; // manipulate your font size in the second parameter
+        byte[] cc = new byte[]{0x1B,0x21,0x00};  // 0- normal size text
+        byte[] bb = new byte[]{0x1B,0x21,0x08};  // 1- only bold text
+        byte[] bb2 = new byte[]{0x1B,0x21,0x20}; // 2- bold with medium text
+        byte[] bb3 = new byte[]{0x1B,0x21,0x10}; // 3- bold with large text
+
+        String tabela="Dia                       Total\n";
+
+        Registo registo = null;
+        while (calInicio.before(calFim) || calInicio.equals(calFim)) {
+            registo = registosManager.getRegistoDia(cliente.getId(), calInicio.getTime());
+
+            if (registo != null) {
+                temp = sdf.format(calInicio.getTime()) + "                 " + String.format(Locale.ROOT, "%.2f", registo.getTotal()) +"\n";
+                for (int i = 1 ; i < registo.getInfo().split("\t").length; i++) {
+                    temp += registo.getInfo().split("\t")[i];
+                }
+                texto += temp;
+            } else {
+                temp = sdf.format(calInicio.getTime()) + "                 0.00\n";
+                texto += temp;
+            }
+
+            calInicio.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        try {
+            mmOutputStream.write(left);
+            mmOutputStream.write(tabela.getBytes());
+            mmOutputStream.write(separador.getBytes());
+            mmOutputStream.write(texto.getBytes());
+
+        } catch (IOException e) {
+            activity.setContentView(R.layout.error_template);
+            TextView t1=(TextView)this.activity.findViewById(R.id.textView27);
+            t1.setText("Descrição[007]\nDispositivo desligado ou não encontrado!");
         }
     }
 
@@ -418,7 +474,14 @@ public class Connection_bt {
     public void imprime(Cliente cliente) throws IOException {
         findBT();
         openBT();
-        sendData();
+        sendData(false);
+        closeBT();
+    }
+
+    public void imprimeLS() throws IOException {
+        findBT();
+        openBT();
+        sendData(true);
         closeBT();
     }
 }

@@ -84,18 +84,20 @@ public class DateUtil {
 
         Collections.reverse(listaDatas);
 
+        //condição de quando a data de pagamento está á frente do dia de hj
+        if (listaDatas.isEmpty()) {
+            calendar.setTime(ultimoPagamento);
+            listaDatas.add(formatter.format(calendar.getTime()));
+            return listaDatas;
+        }
+
         if (calendar.get(Calendar.DAY_OF_MONTH) < 15) {
             String toMove = listaDatas.get(1);
             listaDatas.set(1, listaDatas.get(0));
             listaDatas.set(0, toMove);
         }
 
-        //condição de quando a data de pagamento está á frente do dia de hj
-        if (listaDatas.isEmpty()) {
-            calendar.setTime(hj);
-            listaDatas.add(formatter.format(calendar.getTime()));
-        }
-
         return listaDatas;
+
     }
 }
