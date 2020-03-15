@@ -2,13 +2,20 @@
 # 1. **Introdução**
 Esta aplicação foi desenvolvida para um cenário de processar dados de uma frota de clientes de uma distribuição ao domicilio de produtos de panificação, pastelaria e derivados.
 
-# 2. **Requisitos**
+# 2. **Requisitos de desenvolvimento**
+  - Integridade
+    - Não poderá haver perca de informação
+  - Dados guardados em ficheiros
+    - Possibilidade de editar informação mais fácilmente
+  - Interface fácil e clara de usar
+
+# 3. **Requisitos de sistema**
   - Sistema operativo: Android
   - Ecrã: 10.1 polegadas
     - Todo o layout da aplicação foi desenvolvido especificamente para estas medidas no modo horizontal para poder mostrar toda a informação importante.
   - GPS, Bluethoot, Internet
 
-# 3. **Funções**
+# 4. **Funções**
   - Main Page (Página principal)
     - Pagina onde são enumerados todos os clientes. São mostrados com diferentes cores:
       - Verde: Pagamento mensal
