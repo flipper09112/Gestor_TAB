@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:weightSum="10">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/textView26"
+                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:autoSizeTextType="uniform"
+                android:textAlignment="center"
+                android:layout_height="match_parent"
+                android:text="Tempo para ligar a tela de descanço" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="4"
+            android:layout_weight="1">
+
+        <SeekBar
+                android:id="@+id/seekBar"
+                android:layout_weight="3"
+                android:max="120"
+                android:min="5"
+            android:progress="60"
+
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/textView41"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:text="0 min"
+                android:textAlignment="center" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:weightSum="1">
+
+            <Button
+                android:id="@+id/button"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="0.5"
+                android:onClick="voltarMainPage"
+                android:text="Voltar" />
+
+            <Button
+                android:id="@+id/button7"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="0.5"
+                android:onClick="saveSystemConfigs"
+                android:text="Salvar" />
+        </TableRow>
+
+    </TableLayout>
+</LinearLayout>

@@ -13,13 +13,17 @@ import com.example.gestor_tab.R;
 import com.example.gestor_tab.clientes.Cliente;
 import com.example.gestor_tab.clientes.Registo;
 import com.example.gestor_tab.clientes.RegistosManager;
+import com.example.gestor_tab.encomendas.EncomendaManager;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Set;
@@ -142,7 +146,7 @@ public class Connection_bt {
             t1.setText("Descrição[001]\nDispositivo não ligado!");
         }
     }
-    private void sendData(boolean loja) {
+    private void sendData(boolean loja, ArrayList<String> encomendas) {
         try {
             byte[] center =  { 0x1b, 'a', 0x01 }; // center alignment
             byte[] left= {0x1B, 'a',0x00};
@@ -174,7 +178,7 @@ public class Connection_bt {
             if(loja) {
                 descricao(separador);
             } else {
-                tabela(separador);
+                tabela(separador, encomendas);
             }
 
             mmOutputStream.write(left);
@@ -233,10 +237,10 @@ public class Connection_bt {
 
             if (registo != null) {
                 temp = sdf.format(calInicio.getTime()) + "                 " + String.format(Locale.ROOT, "%.2f", registo.getTotal()) +"\n";
-                for (int i = 1 ; i < registo.getInfo().split("\t").length; i++) {
+                for (int i = 1 ; i < registo.getInfo().split("\t").length - 1; i++) {
                     temp += registo.getInfo().split("\t")[i];
                 }
-                texto += temp;
+                texto += temp + "\n";
             } else {
                 temp = sdf.format(calInicio.getTime()) + "                 0.00\n";
                 texto += temp;
@@ -300,7 +304,7 @@ public class Connection_bt {
         }
     }
 
-    private void tabela(String separador) {
+    private void tabela(String separador, ArrayList<String> encomendas) {
         Spinner dia2Spiner = activity.findViewById(R.id.spinner);
 
         byte[] center =  { 0x1b, 'a', 0x01 }; // center alignment
@@ -346,6 +350,13 @@ public class Connection_bt {
             mmOutputStream.write(sabado.getBytes());
             mmOutputStream.write(domingo.getBytes());
             mmOutputStream.write(extras.getBytes());
+
+            for (String encomenda : encomendas) {
+                String text = encomenda.substring(encomenda.indexOf(":")+1).trim();
+                text = text.replace("para", "do");
+                text += "\n";
+                mmOutputStream.write(text.getBytes());
+            }
 
 
         } catch (IOException e) {
@@ -471,17 +482,75 @@ public class Connection_bt {
     }
 
 
-    public void imprime(Cliente cliente) throws IOException {
+    public void imprime(Cliente cliente, ArrayList<String> encomendas) throws IOException {
         findBT();
         openBT();
-        sendData(false);
+        sendData(false, encomendas);
         closeBT();
     }
 
     public void imprimeLS() throws IOException {
         findBT();
         openBT();
-        sendData(true);
+        sendData(true, null);
+        closeBT();
+    }
+
+    private void sendData(ArrayList<Registo> registosEncomendasThisDay) {
+        try {
+            byte[] center = {0x1b, 'a', 0x01}; // center alignment
+            byte[] left = {0x1B, 'a', 0x00};
+            byte[] format = {29, 33, 35}; // manipulate your font size in the second parameter
+            byte[] cc = new byte[]{0x1B, 0x21, 0x00};  // 0- normal size text
+            byte[] bb = new byte[]{0x1B, 0x21, 0x08};  // 1- only bold text
+            byte[] bb2 = new byte[]{0x1B, 0x21, 0x20}; // 2- bold with medium text
+            byte[] bb3 = new byte[]{0x1B, 0x21, 0x10}; // 3- bold with large text
+
+            String separador="";
+            String finish="\n\n\n\n";
+            for (int i=0;i<32;i++){
+                separador+="-";
+            }
+            separador+="\n";
+
+            for (Registo registo : registosEncomendasThisDay) {
+                String id = "Cliente id: " + Integer.toString(registo.getId()) + "\n\n";
+
+                mmOutputStream.write(left);
+                mmOutputStream.write(id.getBytes());
+                mmOutputStream.write(registo.getInfo().getBytes());
+                mmOutputStream.write(separador.getBytes());
+                mmOutputStream.flush();
+
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+            mmOutputStream.write("FIM \n\n\n".getBytes());
+            mmOutputStream.flush();
+
+
+        } catch (IOException e) {
+            activity.setContentView(R.layout.error_template);
+            TextView t1=(TextView)this.activity.findViewById(R.id.textView27);
+            t1.setText("Descrição[009]\nDispositivo desligado ou não encontrado!");
+        } catch (NullPointerException e) {
+            activity.setContentView(R.layout.error_template);
+            TextView t1=(TextView)this.activity.findViewById(R.id.textView27);
+            t1.setText("Descrição[005]\nDispositivo desligado ou não encontrado!");
+        }
+
+    }
+
+    public void imprimeencomendas(final ArrayList<Registo> registosEncomendasThisDay) throws IOException {
+        findBT();
+        openBT();
+        sendData(registosEncomendasThisDay);
+
         closeBT();
     }
 }

@@ -2,24 +2,65 @@
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
+        <item
+            android:id = "@+id/search"
+            android:title="Search"
+            android:icon="@drawable/search"
+            app:showAsAction="ifRoom"
+            app:actionViewClass="android.widget.SearchView"/>
+
+
         <!-- Search / will display always -->
         <item android:id="@+id/action_search"
             android:title="Search"
             android:icon="@drawable/gps"
             app:showAsAction="ifRoom" />
-
         <item android:id="@+id/encomenda"
             android:title="Realizar encomenda" />
         <item android:id="@+id/rota"
             android:title="Mostrar rota" />
         <item android:id="@+id/logs"
             android:title="Registos da aplicação" />
-        <item android:id="@+id/backup"
-            android:title="Backup files" />
         <item android:id="@+id/Price_list"
             android:title="Tabela de Preços" />
+        <item
+            android:id="@+id/catalogo"
+            android:title="Catálogo">
+                <menu>
+                        <item android:id="@+id/catalogoPao"
+                            android:title="Catálogo Pão" />
+
+                        <item android:id="@+id/catalogoBolos"
+                            android:title="Catálogo Bolos" />
+                </menu>
+        </item>
         <item android:id="@+id/Sobras"
             android:title="Registar sobras do dia" />
+
+        <item android:title="Estatisticas">
+            <menu>
+                <item android:id="@+id/stats"
+                    android:title="Estatisticas (Gráficos)" />
+
+                <item android:id="@+id/printEncomendas"
+                    android:title="Imprimir encomendas" />
+            </menu>
+
+        </item>
+
+        <item android:id="@+id/config"
+            android:title="Definições">
+                <menu>
+                        <item android:id="@+id/backup"
+                            android:title="Restaurar ficheiros backup" />
+
+                        <item android:id="@+id/upload"
+                            android:title="Salvar backup" />
+
+                        <item android:id="@+id/outras"
+                            android:title="Definições de sistema" />
+                </menu>
+        </item>
         <item android:id="@+id/logOut"
             android:title="Sair" />
 

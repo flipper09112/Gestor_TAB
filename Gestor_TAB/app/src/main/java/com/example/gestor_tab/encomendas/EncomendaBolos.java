@@ -41,8 +41,6 @@ public class EncomendaBolos {
     public EncomendaBolos(String nome) {
         this.name = nome;
 
-        this.natas = natas;
-        this.bolosVariados = bolosVariados;
     }
 
     public void addBolos(int boloID, int quantidade) {

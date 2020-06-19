@@ -1,18 +1,17 @@
 package com.example.gestor_tab.activitys;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.res.ResourcesCompat;
 
 import android.Manifest;
-import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -20,20 +19,23 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Criteria;
-import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.AudioAttributes;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -50,30 +52,30 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SearchView;
+import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.gestor_tab.R;
+import com.example.gestor_tab.activitys.MainActivity_Functions.ShowCatalogo;
+import com.example.gestor_tab.bt.Connection_bt;
 import com.example.gestor_tab.clientes.Cliente;
 import com.example.gestor_tab.clientes.ClientsManager;
 import com.example.gestor_tab.clientes.Registo;
 import com.example.gestor_tab.clientes.RegistosManager;
 import com.example.gestor_tab.clientes.TabelaPrecos;
+import com.example.gestor_tab.database.FirebaseUtils;
 import com.example.gestor_tab.database.ListaClientesBaseUtil;
 import com.example.gestor_tab.enumClasses.DecimalDigitsInputFilter;
 import com.example.gestor_tab.geocode.GeoCliente;
 import com.example.gestor_tab.geocode.ReverseGeoCode;
 import com.example.gestor_tab.geocode.ReverseGeoCodeCliente;
-import com.example.gestor_tab.activitys.notifications.AlarmReceiver;
-import com.example.gestor_tab.ui.login.LoginActivity;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,12 +84,17 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 
 import jxl.read.biff.BiffException;
+import lecho.lib.hellocharts.model.Axis;
+import lecho.lib.hellocharts.model.Line;
+import lecho.lib.hellocharts.model.LineChartData;
+import lecho.lib.hellocharts.model.PointValue;
+import lecho.lib.hellocharts.view.LineChartView;
 
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static com.example.gestor_tab.database.ListaPrecosBaseUtil.getTabela;
 import static com.example.gestor_tab.database.LogsBaseUtil.getAllLogs;
 import static com.example.gestor_tab.database.LogsBaseUtil.getAllLogsEncomendas;
@@ -98,23 +105,29 @@ import static com.example.gestor_tab.database.LogsBaseUtil.saveAllLogs;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String CHANNEL_ID = "101";
+    private static final String SYSTEM_CONFIG = "systemConfig";
+    private static final String SNOOZE_TIME = "snoozeTime";
+
+    private static final String CHANNEL_ID = "Notification encomenda";
 
     private StorageReference mStorageRef;
     private FirebaseAuth mAuth;
 
-    private ClientsManager clientsManager;
-
-    private NotificationManager mNotificationManager;
-
     private ReverseGeoCode reverseGeoCode;
-
     private ReverseGeoCodeCliente reverseGeoCodeCliente;
 
     private ArrayList<Float> listSpeed;
 
     private ListaClientesBaseUtil db;
+    private ArrayAdapter<Cliente> adapter;
 
+    private Handler handler;
+    private Runnable r;
+
+    private LocationManager locationManager;
+    private LocationListener locationListener;
+
+    private ClientsManager clientsManager;
     private RegistosManager registosManager;
 
     @Override
@@ -123,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
 
             super.onCreate(savedInstanceState);
 
-            setContentView(R.layout.activity_main);
+            setContentView(R.layout.activity_main_v2);
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
@@ -131,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
             mAuth = FirebaseAuth.getInstance();
             FirebaseUser user = mAuth.getCurrentUser();
             if (user != null) {
-                Toast.makeText(getApplicationContext(), "Bem vindo de volta " + user.getEmail() + "!", Toast.LENGTH_LONG).show();
+                //Toast.makeText(getApplicationContext(), "Bem vindo de volta " + user.getEmail() + "!", Toast.LENGTH_LONG).show();
             } else {
                 Intent intent = new Intent(this, LoginActivity.class);
                 startActivity(intent);
@@ -141,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
 
             Intent intent = getIntent();
             int position = 0;
-            final Cliente cliente = (Cliente) intent.getSerializableExtra("Cliente");
+            final Cliente cliente = (Cliente) intent.getParcelableExtra("Cliente");
             onRestoreListAverageArray(savedInstanceState);
 
             int refresh = intent.getIntExtra("refresh", -1);
@@ -159,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
 
                 TextView msgErro = findViewById(R.id.textView27);
                 msgErro.setText("Nenhum cliente encontrado!");
+                return;
             }
 
             //refresh and replace changes
@@ -168,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
                 db.guarda_em_ficheiro(clientsManager);
 
                 if (refresh == 1) {
-                    Intent myIntent = new Intent(getApplicationContext(), ClienteActivity.class);
+                    Intent myIntent = new Intent(this, ClienteActivity.class);
                     myIntent.putExtra("Cliente", cliente);
                     startActivity(myIntent);
                     finish();
@@ -177,7 +191,6 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 reverseGeoCode = new ReverseGeoCode(getResources().openRawResource(R.raw.pt), true);
-//                reverseGeoCode = new ReverseGeoCode(new FileInputStream(getExternalFilesDir(null)+"/pt.txt"), true);
                 reverseGeoCodeCliente = new ReverseGeoCodeCliente(clientsManager.getClientsList());
             } catch (IOException e) {
                 final TextView localidade = findViewById(R.id.localidade);
@@ -185,16 +198,17 @@ public class MainActivity extends AppCompatActivity {
             }
 
             setListaClientes(position);
-            //setNotificationScheduler(getApplicationContext());
-            //issueNotification();
             setEncomendas();
             setGPSData();
+            inatividade();
+
 
         } catch (IOException | BiffException e) {
             setContentView(R.layout.error_template);
 
             TextView msgErro = findViewById(R.id.textView27);
             msgErro.setText("Erro na inicialização da main page!");
+            e.printStackTrace();
         } catch (NullPointerException e) {
             setContentView(R.layout.error_template);
             TextView t1=(TextView)findViewById(R.id.textView27);
@@ -202,14 +216,74 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("----------------------------------------------");
             e.printStackTrace();
         }
-
-
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopHandler();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        stopHandler();
+        inatividade();
+    }
+
+    private void inatividade() {
+        handler = new Handler();
+        r = new Runnable() {
+            @Override
+            public void run() {
+                // TODO Auto-generated method stub
+                Toast.makeText(MainActivity.this, "Tela de descanço",Toast.LENGTH_SHORT).show();
+                endActivity();
+            }
+        };
+        startHandler();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        //locationManager.removeUpdates(locationListener);
+        stopHandler();
+    }
+
+    private void endActivity() {
+        Intent intent = new Intent(this, SnoozeActivity.class);
+        //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        stopHandler();
+        //finish();
+    }
+
+    @Override
+    public void onUserInteraction() {
+        stopHandler();
+        startHandler();
+    }
+
+    public void stopHandler() {
+        if (handler != null) {
+            handler.removeCallbacks(r);
+        }
+    }
+
+    private void startHandler() {
+        if (handler != null) {
+            SharedPreferences prefs = getSharedPreferences(SYSTEM_CONFIG, MODE_PRIVATE);
+            int time = prefs.getInt(SNOOZE_TIME, 5);
+            handler.postDelayed(r, time*60*1000);
+            //handler.postDelayed(r, 10*1000);
+        }
+    }
 
     private void setListaClientes(int position) {
         final ListView listaDeClientes = (ListView) findViewById(R.id.lista);
-        ArrayAdapter<Cliente> adapter = new ArrayAdapter<Cliente>(this, android.R.layout.simple_list_item_1, clientsManager.getClientsList()) {
+        adapter = new ArrayAdapter<Cliente>(this, android.R.layout.simple_list_item_1, clientsManager.getClientsList()) {
             @Override
             public View getView(int pos, View convertView, ViewGroup parent){
 
@@ -217,19 +291,21 @@ public class MainActivity extends AppCompatActivity {
 
                 TextView ListItemShow = (TextView) view.findViewById(android.R.id.text1);
 
-                if (!clientsManager.getCliente(pos).getAtivo())
+                if (!adapter.getItem(pos).getAtivo())
                     ListItemShow.setBackgroundColor(Color.parseColor("#ff0000"));
-                else if (clientsManager.getCliente(pos).getTipoPagamento().equals("D"))
+                else if (adapter.getItem(pos).getTipoPagamento().equals("D"))
                     ListItemShow.setBackgroundColor(Color.parseColor("#0060ff"));
 
-                else if (clientsManager.getCliente(pos).getTipoPagamento().equals("M"))
+                else if (adapter.getItem(pos).getTipoPagamento().equals("M"))
                     ListItemShow.setBackgroundColor(Color.parseColor("#00ff00"));
 
-                else if (clientsManager.getCliente(pos).getTipoPagamento().equals("S"))
+                else if (adapter.getItem(pos).getTipoPagamento().equals("S"))
                     ListItemShow.setBackgroundColor(Color.parseColor("#ffff00"));
 
-                else if (clientsManager.getCliente(pos).getTipoPagamento().equals("LS"))
+                else if (adapter.getItem(pos).getTipoPagamento().equals("LS"))
                     ListItemShow.setBackgroundColor(Color.parseColor("#ffa500"));
+                else if (adapter.getItem(pos).getTipoPagamento().equals("JD"))
+                    ListItemShow.setBackgroundColor(Color.parseColor("#ff66d9"));
                 else
                     ListItemShow.setBackgroundColor(Color.parseColor("#ffffff"));
 
@@ -240,8 +316,10 @@ public class MainActivity extends AppCompatActivity {
         listaDeClientes.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
                 Intent myIntent = new Intent(getApplicationContext(), ClienteActivity.class);
-                myIntent.putExtra("Cliente", clientsManager.getCliente(i));
+                //myIntent.putExtra("ListaClientes", clientsManager);
+                myIntent.putExtra("Cliente", adapter.getItem(i));
                 startActivity(myIntent);
                 finish();
             }
@@ -265,7 +343,7 @@ public class MainActivity extends AppCompatActivity {
                         Intent intent;
                         Date date = new Date();
                         float[] despesa = {0, 0, 0, 0, 0, 0, 0, 0};
-                        Cliente newCliente = new Cliente("Default", clientsManager.getId(), date, "S", despesa);
+                        Cliente newCliente = new Cliente("Default", clientsManager.getId(), date, "S", despesa, null, null, 0, null);
                         Intent refresh;
                         switch (indice[0]) {
                             case 0:
@@ -343,7 +421,8 @@ public class MainActivity extends AppCompatActivity {
         final int finalPosition = position;
         listaDeClientes.post(new Runnable() {
             public void run() {
-                listaDeClientes.smoothScrollToPosition(finalPosition);
+                listaDeClientes.setSelection(finalPosition);
+                //listaDeClientes.smoothScrollToPosition(finalPosition);
             }
         });
     }
@@ -477,14 +556,15 @@ public class MainActivity extends AppCompatActivity {
         mediatxt.setText("0");
 
         // Acquire a reference to the system Location Manager
-        LocationManager locationManager = (LocationManager) this
-                .getSystemService(Context.LOCATION_SERVICE);
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
         // Define a listener that responds to location updates
-        LocationListener locationListener = new LocationListener() {
+        locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
+
                 double lat = location.getLatitude();
                 double lng = location.getLongitude();
+                System.out.println("GPS working: " + lat + " " + lng);
 
                 //velocidade
                 float speed = (float) (location.getSpeed() * 3.6);
@@ -501,7 +581,7 @@ public class MainActivity extends AppCompatActivity {
 
                 //localidade
                 List<Address> addresses = null;
-                if (isNetworkAvailable()) {
+                /*if (isNetworkAvailable()) {
                     Geocoder geo = new Geocoder(getApplicationContext(), Locale.getDefault());
                     try {
                         addresses = geo.getFromLocation(lat, lng, 1);
@@ -519,10 +599,10 @@ public class MainActivity extends AppCompatActivity {
                             localidade.setText(addresses.get(0).getFeatureName() + ", " + addresses.get(0).getLocality() +", " + addresses.get(0).getAdminArea() + ", " + addresses.get(0).getCountryName());
                         }
                     }
-                } else {
+                } else {*/
                     reverseGeoCode.nearestPlace(lat, lng);
                     localidade.setText(reverseGeoCode.nearestPlace(lat, lng).toString());
-                }
+                /*}*/
 
                 GeoCliente geoCliente =null;
                 int position = -1;
@@ -534,46 +614,21 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (position != -1) {
+                    //System.out.println(distFrom(lat, lng, geoCliente.latitude, geoCliente.longitude));
 
-                    if (distFrom(lat, lng, geoCliente.latitude, geoCliente.longitude) < 100) {
+                    if (distFrom(lat, lng, geoCliente.latitude, geoCliente.longitude) < 80) {
 
                         if (!notificationON[0]) {
 
+                            if (!notificationON[0])
+                                sendMyNotification(registoArrayList.get(position).getInfo());
                             notificationON[0] = true;
-
-                            createAlertDialogTurnOffSoundNotification(r, registoArrayList.get(position).toStringEncomenda());
-
-                            NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), CHANNEL_ID)
-                                    .setSmallIcon(R.mipmap.ic_launcher)
-                                    .setContentTitle("Cliente")
-                                    .setContentText("TEXTO aqui")
-                                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                                    .setAutoCancel(true)
-                                    .setLights(0xff0000ff, 300, 1000)
-                                    .setNumber(3)// this shows a number in the notification dots
-                                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-                            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-
-                            createNotificationChannel();
-
-                            try {
-                                if (!r.isPlaying()){
-                                    r.play();
-                                }
-
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-
-                            // notificationId is a unique int for each notification that you must define
-                            notificationManager.notify(101, builder.build());
                         }
 
                     } else {
                         notificationON[0] = false;
-                        if (r.isPlaying())
-                            r.stop();
+                        calcelNotification();
+
                     }
                 }
 
@@ -601,37 +656,49 @@ public class MainActivity extends AppCompatActivity {
             // for Activity#requestPermissions for more details.
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 101);
         }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0,
-                0, locationListener);
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 0, locationListener);
 
     }
 
-    private void createAlertDialogTurnOffSoundNotification(final Ringtone r, String s) {
 
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
 
-        // set title
-        alertDialogBuilder.setTitle("Desligar som da notificação");
+    private void sendMyNotification(String message) {
 
-        // set dialog message
-        alertDialogBuilder
-                .setMessage(s)
+        Uri soundUri = Uri.parse("android.resource://" + getApplicationContext().getPackageName() + "/" + R.raw.school_alarm);
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(message)
+                .setAutoCancel(true)
+                .setSound(soundUri);
 
-                .setPositiveButton("STOP",new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog,int id) {
-                        // if this button is clicked, close
-                        // current activity
-                        r.stop();
-                    }
-                });
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
-        // create alert dialog
-        AlertDialog alertDialog = alertDialogBuilder.create();
+            if(soundUri != null){
+                // Changing Default mode of notification
+                notificationBuilder.setDefaults(Notification.DEFAULT_VIBRATE);
+                // Creating an Audio Attribute
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .build();
 
-        // show it
-        alertDialog.show();
-
+                // Creating Channel
+                NotificationChannel notificationChannel = new NotificationChannel(CHANNEL_ID,"Testing_Audio",NotificationManager.IMPORTANCE_HIGH);
+                notificationChannel.setSound(soundUri,audioAttributes);
+                mNotificationManager.createNotificationChannel(notificationChannel);
+            }
+        }
+        mNotificationManager.notify(0, notificationBuilder.build());
     }
+
+    private void calcelNotification() {
+        NotificationManager notifManager= (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notifManager.deleteNotificationChannel(CHANNEL_ID);
+    }
+
 
     private int verificaClienteNotificacao(ArrayList<Registo> registoArrayList, int clientID) {
 
@@ -646,22 +713,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return -1;
-    }
-
-    private void createNotificationChannel() {
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = getString(R.string.notification_channel);
-            String description = getString(R.string.notification_channel_description);
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
-            // Register the channel with the system; you can't change the importance
-            // or other notification behaviors after this
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
     }
 
 
@@ -682,7 +733,7 @@ public class MainActivity extends AppCompatActivity {
 
         ArrayList<String> infos = new ArrayList<>();
 
-        ArrayList<Registo> registoArrayList = registosManager.getRegistosEncomendasThisDay(new Date());
+        ArrayList<Registo> registoArrayList = registosManager.getRegistosEncomendasThisDaySort(new Date(), clientsManager.getClientsList());
 
         if (registoArrayList.size() == 0) {
             infos.add("Nenhuma encomenda para o dia de hoje!");
@@ -691,7 +742,7 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < registoArrayList.size(); i++) {
             infos.add(
                     "Cliente: " +
-                    clientsManager.getClienteName(registoArrayList.get(i).getId()).toUpperCase() +
+                            clientsManager.getClienteId(registoArrayList.get(i).getId()).toString().replaceAll("\n", "\n               ") +
                             "\n" +
                             registoArrayList.get(i).toStringEncomenda());
         }
@@ -707,6 +758,24 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.options, menu);
+
+        MenuItem menuItem = menu.findItem(R.id.search);
+        SearchView searchView = (SearchView) menuItem.getActionView();
+        searchView.setQueryHint("Search Here");
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                adapter.getFilter().filter(newText);
+                return false;
+            }
+        });
+
         return true;
     }
 
@@ -714,6 +783,15 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         //Toast.makeText(this, "Selected Item: " +item.getTitle(), Toast.LENGTH_SHORT).show();
         switch (item.getItemId()) {
+            case R.id.catalogoPao:
+                new ShowCatalogo(this, ShowCatalogo.PAO).run();
+
+                return true;
+
+            case R.id.catalogoBolos:
+                new ShowCatalogo(this, ShowCatalogo.BOLOS).run();
+                return true;
+
             case R.id.action_search:
                 Context context;
                 final AlertDialog dialog;
@@ -801,8 +879,10 @@ public class MainActivity extends AppCompatActivity {
                 locationManager.requestSingleUpdate(criteria, locationListener, looper);
                 return true;
             case R.id.encomenda:
-                Intent intent = new Intent(this, EncomendaActivity.class);
-                startActivity(intent);
+                //Intent intent = new Intent(this, EncomendaActivity.class);
+                //startActivity(intent);
+                Intent intent2 = new Intent(this, EncomendaActivityV4.class);
+                startActivity(intent2);
                 return true;
             case R.id.rota:
                 showRoute();
@@ -811,7 +891,7 @@ public class MainActivity extends AppCompatActivity {
                 setInfoAllRegistos();
                 return true;
             case R.id.backup:
-                saveDocsInCloud();
+                restoreDocsInCloud();
                 return true;
             case R.id.Price_list:
                 setPriceList();
@@ -820,54 +900,185 @@ public class MainActivity extends AppCompatActivity {
             case R.id.Sobras:
                 registarSobras();
                 return true;
+
+            case R.id.stats:
+                setStats();
+                return true;
+
+            case R.id.printEncomendas:
+                printEncomendas();
+                return true;
+            case R.id.outras:
+                setSystemConfig();
+                return true;
             case R.id.logOut:
                 logOut();
                 return true;
+
+            case R.id.upload:
+                uploadFilesToBackup();
+
+                return true;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void setSystemConfig() {
+        setContentView(R.layout.system_config);
+        final SeekBar seekBar = findViewById(R.id.seekBar);
+        final TextView textView = findViewById(R.id.textView41);
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            int pval = 0;
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                pval = progress;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                textView.setText(pval + " min");
+            }
+        });
+
+        SharedPreferences prefs = getSharedPreferences(SYSTEM_CONFIG, MODE_PRIVATE);
+        int time = prefs.getInt(SNOOZE_TIME, 5);
+        textView.setText(time + " min");
+        seekBar.setProgress(time);
+    }
+
+    private void uploadFilesToBackup() {
+        AlertDialog alertDialog = new Builder(this)
+                .setTitle("Salvar Ficheiros na cloud?")
+
+                .setPositiveButton("SIM", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        FirebaseUtils.saveDocsInCloud(getApplicationContext(), mStorageRef);
+                        //FirebaseUtils.saveDocsInCloudDevelop(getApplicationContext(), mStorageRef);
+                        /*Intent intent = getIntent();
+                        finish();
+                        startActivity(intent);*/
+                    }
+                })
+
+                .setNegativeButton("Não", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+
+                .create();
+
+        alertDialog.show();
+    }
+
+    private void printEncomendas() {
+        final Connection_bt connectionBt = new Connection_bt(this, null);
+        final SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+
+
+        int mYear, mMonth, mDay;
+
+        // Get Current Date
+        final Calendar c = Calendar.getInstance();
+        mYear = c.get(Calendar.YEAR);
+        mMonth = c.get(Calendar.MONTH);
+        mDay = c.get(Calendar.DAY_OF_MONTH);
+
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                new DatePickerDialog.OnDateSetListener() {
+
+                    @Override
+                    public void onDateSet(DatePicker view, int year,
+                                          int monthOfYear, int dayOfMonth) {
+
+                        try {
+                            Date date = formatter.parse(dayOfMonth + "/" + (monthOfYear + 1) + "/" + year);
+
+                            connectionBt.imprimeencomendas(registosManager.getRegistosEncomendasThisDaySort(date, clientsManager.getClientsList()));
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }, mYear, mMonth, mDay);
+        datePickerDialog.show();
+    }
+
+    private void setStats() {
+        setContentView(R.layout.stats_page);
+
+        LineChartView chart = findViewById(R.id.chart);
+
+        List<PointValue> values = new ArrayList<PointValue>();
+        values.add(new PointValue(0, 2));
+        values.add(new PointValue(1, 4));
+        values.add(new PointValue(2, 3));
+        values.add(new PointValue(3, 4));
+
+        //In most cased you can call data model methods in builder-pattern-like manner.
+        Line line = new Line(values).setColor(Color.BLUE).setCubic(true);
+        List<Line> lines = new ArrayList<Line>();
+        lines.add(line);
+
+        LineChartData data = new LineChartData();
+        data.setLines(lines);
+
+        chart.setInteractive(true);
+        chart.setZoomEnabled(true);
+
+        Axis axis = new Axis();
+        axis.setName("asd");
+        chart.getChartData().setAxisXTop(axis);
+
+        chart.setLineChartData(data);
+
+    }
+
+    private void restoreDocsInCloud() {
+        AlertDialog alertDialog = new Builder(this)
+                .setTitle("Restaurar Ficheiros salvos na cloud?")
+
+                .setPositiveButton("SIM", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent = getIntent();
+                        intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+
+                        FirebaseUtils.restoreSavedDocsInCloud(getApplicationContext(), mStorageRef, intent);
+
+                    }
+                })
+
+                .setNegativeButton("Não", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+
+                .create();
+
+        alertDialog.show();
     }
 
     private void logOut() {
         mAuth.signOut();
         startActivity(new Intent(this, LoginActivity.class));
         finish();
-    }
-
-    private void saveDocsInCloud() {
-        File clientes = new File(getExternalFilesDir(null), "MeuArquivoXLS.xls");
-        File encomendas = new File(getExternalFilesDir(null), "EncomendasPanilima.txt");
-        File logs = new File(getExternalFilesDir(null), "logs/logs.txt");
-        File tabelaPrecos = new File(getExternalFilesDir(null), "TabelaPrecos.xls");
-
-        Uri file = Uri.fromFile(clientes);
-        Uri file1 = Uri.fromFile(encomendas);
-        Uri file2 = Uri.fromFile(logs);
-        Uri file3 = Uri.fromFile(tabelaPrecos);
-
-        StorageReference riversRef = mStorageRef.child("docs/MeuArquivoXLS.xls");
-        StorageReference riversRef1 = mStorageRef.child("docs/EncomendasPanilima.txt");
-        StorageReference riversRef2 = mStorageRef.child("docs/logs.txt");
-        StorageReference riversRef3 = mStorageRef.child("docs/TabelaPrecos.xls");
-
-        riversRef.putFile(file).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-            @Override
-            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                // Get a URL to the uploaded content
-                //Toast.makeText(MainActivity.this, "OK", Toast.LENGTH_SHORT).show();
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception exception) {
-                // Handle unsuccessful uploads
-
-                //Toast.makeText(MainActivity.this, "NOT OK", Toast.LENGTH_SHORT).show();
-            }
-        });
-        riversRef1.putFile(file1);
-        riversRef2.putFile(file2);
-        riversRef3.putFile(file3);
-
     }
 
     public void addProduto(String produto, float valor, boolean unit) {
@@ -922,7 +1133,6 @@ public class MainActivity extends AppCompatActivity {
             EditText editText = (EditText) row.getChildAt(1);
 
             editText.setText(Float.toString(precos.get(i)));
-
         }
     }
 
@@ -1214,26 +1424,6 @@ public class MainActivity extends AppCompatActivity {
         return "";
     }
 
-    public void setNotificationScheduler(Context context) {
-        Calendar calendar = new GregorianCalendar();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        calendar.set(Calendar.HOUR_OF_DAY, 10);
-        calendar.set(Calendar.MINUTE, 45);
-
-        Intent intentAlarm = new Intent(this, AlarmReceiver.class);
-        ArrayList<String> encomendas = new ArrayList<>();
-        encomendas.add("Test");
-        intentAlarm.putStringArrayListExtra("Encomendas", encomendas);
-        System.out.println("calling Alarm receiver ");
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        //set the notification to repeat every fifteen minutes
-        // set unique id to the pending item, so we can call it when needed
-        PendingIntent pi = PendingIntent.getBroadcast(this, 0, intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT);
-        //alarmManager.setInexactRepeating(AlarmManager.RTC, SystemClock.elapsedRealtime(), 60*1000, pi);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pi);
-
-    }
-
     public void resetAverage(View view) {
         this.listSpeed.clear();
     }
@@ -1278,12 +1468,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void voltarMainPage(View view) {
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_main_v2);
         setListaClientes(0);
-        //setNotificationScheduler(getApplicationContext());
-        //issueNotification();
         setEncomendas();
         setGPSData();
+        inatividade();
     }
 
     public void chooseDate(View view) {
@@ -1363,5 +1552,20 @@ public class MainActivity extends AppCompatActivity {
     public void example(View view) {
         RegistosManager registosManager = getAllLogs(getApplicationContext());
         saveAllLogs(getApplicationContext(), registosManager);
+        FirebaseUtils.saveDocInCloud(this, mStorageRef, new File(getExternalFilesDir(null)+"/logsTest", "logs.txt"));
+    }
+
+    public void saveSystemConfigs(View view) {
+        SharedPreferences prefs = getSharedPreferences(SYSTEM_CONFIG, MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        TextView minutos = findViewById(R.id.textView41);
+        int min = Integer.parseInt(minutos.getText().toString().split(" ")[0]);
+
+        editor.putInt(SNOOZE_TIME , min);
+        editor.commit();
+
+        stopHandler();
+        startHandler();
+        voltarMainPage(view);
     }
 }

@@ -29,17 +29,26 @@ public class Registo {
 
     public Registo(int id, String tipo, String info, String data) {
         SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+
+        //System.out.println(id + ":" + tipo + ":" + info + ":" + data);
+
         try {
             if (data != null)
                 this.data = formatter.parse(data);
             this.idCliente = id;
             this.tipo = tipo;
             this.info = info;
-            if (tipo.equals("ENCOMENDA")) {
+            if (this.info.startsWith(" ")) {
+                this.info = this.info.substring(1);
+            }
+            if (tipo.equals("ENCOMENDA") || tipo.equals("TOTALENCOMENDA")) {
                 String date = this.info.split(" ")[3].split("\n")[0];
                 this.dateEncomenda = formatter.parse(date);
             }
             if (tipo.equals("REGISTO")) {
+                String date = this.info.split(" ")[3].split("\n")[0];
+                this.dateEncomenda = formatter.parse(date);
+
                 this.total = Float.parseFloat(this.info.split("\tTotal - ")[1]);
                 this.info = this.info.split("\tTotal ;  ")[0];
             }
@@ -129,14 +138,15 @@ public class Registo {
             info = this.info.replaceAll("\n", ",");
         }
 
-        else if (tipo.equals("ENCOMENDA") || tipo.equals("REGISTO")) {
+        else if (tipo.equals("ENCOMENDA") || tipo.equals("REGISTO") || tipo.equals("TOTALENCOMENDA")) {
             info = this.info.replaceAll("\n", ",");
+            info = info.replaceAll("\\.", "&");
 
             if (tipo.equals("REGISTO")) {
 
                 info = info.replaceAll("\t", "]");
                 info = info.replaceAll("-", ";");
-                info += "Total - " + String.format(Locale.ROOT, "%.2f", this.total);
+                //info += "Total - " + String.format(Locale.ROOT, "%.2f", this.total);
             }
         }
 

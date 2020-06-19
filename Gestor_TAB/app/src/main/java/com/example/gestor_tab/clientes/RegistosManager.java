@@ -1,5 +1,6 @@
 package com.example.gestor_tab.clientes;
 
+import android.content.Context;
 import android.widget.Spinner;
 
 import java.text.DateFormat;
@@ -9,6 +10,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+
+import static com.example.gestor_tab.database.LogsBaseUtil.getAllLogs;
+import static com.example.gestor_tab.database.LogsBaseUtil.saveAllLogs;
 
 public class RegistosManager {
 
@@ -114,7 +118,7 @@ public class RegistosManager {
 
     public Registo getRegistoDia(final int clienteID, final Date date) {
         for (Registo registo : registos) {
-            if (registo.getTipo().equals("REGISTO") && registo.getData().equals(date))
+            if (registo.getTipo().equals("REGISTO") && registo.getDateEncomenda().equals(date))
                 return registo;
         }
 
@@ -127,6 +131,25 @@ public class RegistosManager {
 
         for (Registo registo: registos) {
             if (registo.getTipo().equals("REGISTO") && registo.getId() == clienteID) {
+                try {
+                    if (registo.getDateEncomenda().equals(dateFormat.parse(dataRegisto))) {
+                        return true;
+                    }
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return registoRepetido;
+    }
+
+    public boolean verificaEncomendaTotalRepetida(final int clienteID, final String dataRegisto) {
+        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        boolean registoRepetido = false;
+
+        for (Registo registo: registos) {
+            if (registo.getTipo().equals("TOTALENCOMENDA") && registo.getId() == clienteID) {
                 try {
                     if (registo.getDateEncomenda().equals(dateFormat.parse(dataRegisto))) {
                         return true;
@@ -155,8 +178,12 @@ public class RegistosManager {
 
         ArrayList<Registo> list = new ArrayList<>();
         for (Registo registo : registos) {
-            if (registo.getTipo().equals("ENCOMENDA") && dateFormat.format(registo.getDateEncomenda()).equals(dateFormat.format(nextDay))) {
-                list.add(registo);
+            try {
+                if (registo.getTipo().equals("ENCOMENDA") && dateFormat.format(registo.getDateEncomenda()).equals(dateFormat.format(nextDay))) {
+                    list.add(registo);
+                }
+            } catch (NullPointerException e) {
+                e.printStackTrace();
             }
         }
         return list;
@@ -237,5 +264,68 @@ public class RegistosManager {
             }
         }
         return null;
+    }
+
+    public ArrayList<Registo> getRegistosEncomendasThisDaySort(Date nextDay, ArrayList<Cliente> clientsList) {
+
+        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+        ArrayList<Registo> list = new ArrayList<>();
+        for (Cliente cliente : clientsList) {
+            for (Registo registo : registos) {
+                try {
+                    if (registo.getTipo().equals("ENCOMENDA") &&
+                            dateFormat.format(registo.getDateEncomenda()).equals(dateFormat.format(nextDay)) &&
+                            registo.getId() == cliente.getId()
+                    ) {
+                        list.add(registo);
+                        //break;
+                    }
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return list;
+
+
+    }
+
+    public RegistosManager deleteRegisto(Registo registoToDelete) {
+        int position = -1;
+        int count = 0;
+        for (Registo registo : this.registos) {
+            if (registo.getId() == registoToDelete.getId()) {
+                if (registo.getTipo().equals("ENCOMENDA")) {
+                    if (registo.getDateEncomenda().equals(registoToDelete.getDateEncomenda()) && registo.getData().equals(registoToDelete.getData())) {
+                        if (registo.getInfo().trim().equals(registoToDelete.getInfo().trim())) {
+                            position = count;
+                            break;
+                        }
+                    }
+                } else if (registo.getTipo().equals("REGISTO")) {
+                    if (registo.getDateEncomenda().equals(registoToDelete.getDateEncomenda()) && registo.getData().equals(registoToDelete.getData())) {
+                        if (registo.getInfo().trim().equals(registoToDelete.getInfo().trim())) {
+                            position = count;
+                            break;
+                        }
+                    }
+                }
+            }
+            count++;
+        }
+        this.registos.remove(position);
+        return this;
+    }
+
+    public ArrayList<Registo> getRegistosEncomendasAfterDay(Date date) {
+        ArrayList<Registo> list = new ArrayList<>();
+        for (Registo registo : registos) {
+            if (registo.getTipo().equals("ENCOMENDA")) {
+                if (registo.getDateEncomenda().after(date) || isSameDay(registo.getDateEncomenda(), date))
+                    list.add(registo);
+            }
+        }
+        return list;
     }
 }

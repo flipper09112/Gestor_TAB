@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/divider11"
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+
+        android:background="?android:attr/listDivider"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/divider12"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:visibility="invisible"
+
+        android:background="?android:attr/listDivider"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/tableLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.15" />
+
+    <TableLayout
+        android:id="@+id/tableLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:weightSum="7"
+        app:layout_constraintBottom_toTopOf="@+id/divider15"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/divider11"
+        app:layout_constraintTop_toBottomOf="@+id/divider12">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:weightSum="2">
+
+            <TextView
+                android:id="@+id/textseg"
+                android:layout_width="140dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:text="Segunda"
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/segunda"
+                android:layout_width="75dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textAlignment="center"
+                android:textSize="13sp" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:weightSum="2"
+
+            >
+
+            <TextView
+                android:id="@+id/textter"
+                android:layout_width="140dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:text="Terça"
+
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/terca"
+                android:layout_width="75dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textAlignment="center"
+
+                android:textSize="13sp" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:weightSum="2"
+
+            >
+
+            <TextView
+                android:id="@+id/textqua"
+                android:layout_width="140dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:text="Quarta"
+
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/quarta"
+                android:layout_width="75dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textAlignment="center"
+
+                android:textSize="13sp" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:weightSum="2"
+
+            >
+
+            <TextView
+                android:id="@+id/textqui"
+                android:layout_width="140dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:text="Quinta"
+
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/quinta"
+                android:layout_width="75dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textAlignment="center"
+
+                android:textSize="13sp" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:weightSum="2"
+
+            >
+
+            <TextView
+                android:id="@+id/textsex"
+                android:layout_width="140dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:text="Sexta"
+
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/sexta"
+                android:layout_width="75dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textAlignment="center"
+
+                android:textSize="13sp" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:weightSum="2"
+
+            >
+
+            <TextView
+                android:id="@+id/textsab"
+                android:layout_width="140dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:text="Sábado"
+
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/sabado"
+                android:layout_width="75dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textAlignment="center"
+
+                android:textSize="13sp" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:weightSum="2"
+
+            >
+
+            <TextView
+                android:id="@+id/textdom"
+                android:layout_width="140dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+
+                android:autoSizeTextType="uniform"
+                android:text="Domingo"
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/domingo"
+                android:layout_width="75dp"
+                android:layout_height="match_parent"
+
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textAlignment="center"
+                android:textSize="13sp" />
+        </TableRow>
+
+    </TableLayout>
+
+    <TextView
+        android:id="@+id/textView28"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:autoSizeTextType="uniform"
+        android:text="Inserir novos valores"
+        android:textAlignment="center"
+        android:gravity="center"
+        android:maxLines="1"
+        app:layout_constraintBottom_toTopOf="@+id/divider12"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/divider11"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView42"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:autoSizeTextType="uniform"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="Inserir data do 1º dia da alteração"
+        app:layout_constraintBottom_toTopOf="@+id/divider12"
+        app:layout_constraintEnd_toStartOf="@+id/divider11"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/divider13"
+        android:layout_width="1278dp"
+        android:layout_height="1dp"
+        android:visibility="invisible"
+
+        android:background="?android:attr/listDivider"
+        app:layout_constraintBottom_toBottomOf="@+id/divider11"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.425" />
+
+    <View
+        android:id="@+id/divider14"
+        android:layout_width="1278dp"
+        android:layout_height="1dp"
+        android:visibility="invisible"
+        android:background="?android:attr/listDivider"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.575" />
+
+    <TextView
+        android:id="@+id/textView44"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:text="11/11/2011"
+        android:autoSizeTextType="uniform"
+        android:maxLines="1"
+        android:gravity="center"
+        android:onClick="chooseDateSetInTextview"
+        app:layout_constraintBottom_toTopOf="@+id/divider14"
+        app:layout_constraintEnd_toStartOf="@+id/divider11"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/divider13" />
+
+    <View
+        android:id="@+id/divider15"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.85" />
+
+    <Button
+        android:id="@+id/button8"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:text="Voltar"
+        android:onClick="voltar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/divider11"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/divider15" />
+
+    <Button
+        android:id="@+id/button9"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:text="Salvar"
+        android:onClick="saveAlteracao"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/divider11"
+        app:layout_constraintTop_toBottomOf="@+id/divider15" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

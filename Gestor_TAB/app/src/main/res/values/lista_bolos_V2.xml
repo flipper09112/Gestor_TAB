@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="bolos_array_v2">
+
+        <item>Pastel de Nata</item>
+        <item>Nata de Maca</item>
+        <item>Beijinho</item>
+        <item>Nata de Ananas</item>
+        <item>Nata de Chocolate</item>
+        <item>Bolo de Arroz</item>
+        <item>Queque de Cenoura</item>
+        <item>Queque de chocolate</item>
+        <item>Queque de chocolate e laranja</item>
+        <item>Queque de noz</item>
+        <item>Queque de menta</item>
+        <item>Queque de laranja</item>
+        <item>Queque Marmore</item>
+        <item>Queque de Madeira</item>
+        <item>Queque de Ananas</item>
+        <item>Queque de Arroz</item>
+        <item>Queque de passas</item>
+        <item>Cenourinha</item>
+        <item>Queque amanteigado</item>
+        <item>Argentino</item>
+        <item>Ferradura</item>
+        <item>Brisa do Liz</item>
+        <item>Quindin de coco</item>
+        <item>Quindin de Amendoa</item>
+        <item>Quindin de Noz</item>
+        <item>Coco de Baunilha</item>
+        <item>Bispo</item>
+        <item>Queijada</item>
+        <item>Queijada de amendoa</item>
+        <item>Queijada de laranja</item>
+        <item>Queijada de chila e nata</item>
+        <item>Queijada de coco</item>
+        <item>Queijada de leite</item>
+        <item>Queijada de laranja e coco</item>
+        <item>Queijada de limao e coco</item>
+        <item>Bola de Berlim</item>
+        <item>Bola de Baunilha</item>
+        <item>Bola de Chocolate</item>
+        <item>Bola de café</item>
+        <item>Rocha</item>
+        <item>Palmier</item>
+        <item>Palmier de Chocolate</item>
+        <item>Palmier Tosta</item>
+        <item>Donut Simples</item>
+        <item>Donut com chocolate</item>
+        <item>Gloria</item>
+        <item>Lenço</item>
+        <item>Cronut simples</item>
+        <item>Cronut com chocolate</item>
+        <item>Suspiro</item>
+        <item>Clarinha de Fao</item>
+        <item>Pastel</item>
+        <item>Pastel</item>
+        <item>Pastel</item>
+
+    </string-array>
+
+</resources>

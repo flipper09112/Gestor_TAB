@@ -2,7 +2,10 @@ package com.example.gestor_tab.database;
 
 import com.example.gestor_tab.encomendas.Encomenda;
 import com.example.gestor_tab.encomendas.EncomendaBolos;
+import com.example.gestor_tab.encomendas.EncomendaBolosV2;
 import com.example.gestor_tab.encomendas.EncomendaManager;
+import com.example.gestor_tab.encomendas.EncomendaManagerV2;
+import com.example.gestor_tab.encomendas.EncomendaV2;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,10 +16,12 @@ import java.util.ArrayList;
 
 public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
 
-    public static void saveEncomenda(File file, EncomendaManager encomendaManager) {
+
+    public static void saveEncomendaV2(File file, EncomendaManagerV2 encomendaManager) {
         try {
             FileWriter writer = new FileWriter(file);
             writer.append(encomendaManager.getEncomendaSegunda().toString());
+            writer.append("END\n");
             for (int i = 0 ; i < encomendaManager.getEncomendaSegunda().getEncomendaBolosArrayList().size(); i++) {
                 writer.append(encomendaManager.getEncomendaSegunda().getEncomendaBolosArrayList().get(i).toStringForSaveInDoc());
                 writer.append("END\n");
@@ -24,6 +29,7 @@ public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
             writer.append("FINAL\n");
 
             writer.append(encomendaManager.getEncomendaTerca().toString());
+            writer.append("END\n");
             for (int i = 0 ; i < encomendaManager.getEncomendaTerca().getEncomendaBolosArrayList().size(); i++) {
                 writer.append(encomendaManager.getEncomendaTerca().getEncomendaBolosArrayList().get(i).toStringForSaveInDoc());
                 writer.append("END\n");
@@ -31,6 +37,7 @@ public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
             writer.append("FINAL\n");
 
             writer.append(encomendaManager.getEncomendaQuarta().toString());
+            writer.append("END\n");
             for (int i = 0 ; i < encomendaManager.getEncomendaQuarta().getEncomendaBolosArrayList().size(); i++) {
                 writer.append(encomendaManager.getEncomendaQuarta().getEncomendaBolosArrayList().get(i).toStringForSaveInDoc());
                 writer.append("END\n");
@@ -38,6 +45,7 @@ public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
             writer.append("FINAL\n");
 
             writer.append(encomendaManager.getEncomendaQuinta().toString());
+            writer.append("END\n");
             for (int i = 0 ; i < encomendaManager.getEncomendaQuinta().getEncomendaBolosArrayList().size(); i++) {
                 writer.append(encomendaManager.getEncomendaQuinta().getEncomendaBolosArrayList().get(i).toStringForSaveInDoc());
                 writer.append("END\n");
@@ -45,6 +53,7 @@ public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
             writer.append("FINAL\n");
 
             writer.append(encomendaManager.getEncomendaSexta().toString());
+            writer.append("END\n");
             for (int i = 0 ; i < encomendaManager.getEncomendaSexta().getEncomendaBolosArrayList().size(); i++) {
                 writer.append(encomendaManager.getEncomendaSexta().getEncomendaBolosArrayList().get(i).toStringForSaveInDoc());
                 writer.append("END\n");
@@ -52,6 +61,7 @@ public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
             writer.append("FINAL\n");
 
             writer.append(encomendaManager.getEncomendaSabado().toString());
+            writer.append("END\n");
             for (int i = 0 ; i < encomendaManager.getEncomendaSabado().getEncomendaBolosArrayList().size(); i++) {
                 writer.append(encomendaManager.getEncomendaSabado().getEncomendaBolosArrayList().get(i).toStringForSaveInDoc());
                 writer.append("END\n");
@@ -59,6 +69,7 @@ public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
             writer.append("FINAL\n");
 
             writer.append(encomendaManager.getEncomendaDomingo().toString());
+            writer.append("END\n");
             for (int i = 0 ; i < encomendaManager.getEncomendaDomingo().getEncomendaBolosArrayList().size(); i++) {
                 writer.append(encomendaManager.getEncomendaDomingo().getEncomendaBolosArrayList().get(i).toStringForSaveInDoc());
                 writer.append("END\n");
@@ -70,17 +81,20 @@ public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
         } catch (Exception e) { }
     }
 
-    public static void getEncomenda(File file, EncomendaManager encomendaManager) {
+
+    public static void getEncomendav2(File file, EncomendaManagerV2 encomendaManager, int n_produtos) {
         try {
-            ArrayList<Integer> items = new ArrayList<>();
+            ArrayList<Float> items = new ArrayList<>();
+            ArrayList<String> products = new ArrayList<>();
             String dia;
 
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
-            int quantidade;
-            int count = 1;
+            float quantidade;
+            boolean first = true;
 
             while ((line = br.readLine()) != null) {
+
                 dia = line;
 
                 if (dia.equals(""))
@@ -88,36 +102,44 @@ public class EncomendaDistribuidorBaseUtil extends DataBaseUtil {
 
                 while ((line = br.readLine()) != null) {
                     System.out.println(line);
-                    quantidade = Integer.parseInt(line.split("-")[1].replaceAll(" ", ""));
-                    items.add(quantidade);
 
-                    if (count == encomendaManager.numberOfItems()) {
-                        count = 1;
+                    if (line.equals("END"))
                         break;
-                    }
-                    count++;
+
+                    quantidade = Float.parseFloat(line.split("-")[1].replaceAll(" ", ""));
+                    items.add(quantidade);
+                    products.add(line.split("-")[0].trim());
+
                 }
 
-                ArrayList<EncomendaBolos> encomendaBolosArrayList = new ArrayList<>();
+                ArrayList<EncomendaBolosV2> encomendaBolosArrayList = new ArrayList<>();
+
                 while (!(line = br.readLine()).equals("FINAL")) {
-                    EncomendaBolos encomendaBolos = new EncomendaBolos(line);
+                    EncomendaBolosV2 encomendaBolos = new EncomendaBolosV2(line);
                     while (!(line = br.readLine()).equals("FINAL")) {
                         if (line.equals("END"))
                             break;
 
-                        line = line.replaceAll(" ", "");
-                        int id = Integer.parseInt(line.split("-")[0]);
-                        int total  = Integer.parseInt(line.split("-")[1]);
+                        try {
 
-                        encomendaBolos.addBolos(id, total);
+                            //line = line.replaceAll(" ", "");
+                            String nome = line.split("-")[0].trim();
+                            int total  = Integer.parseInt(line.split("-")[1].trim());
+
+                            encomendaBolos.addBolos(nome, total);
+
+                        } catch (Exception e) {
+                            continue;
+                        }
 
                     }
                     encomendaBolosArrayList.add(encomendaBolos);
                 }
 
 
-                encomendaManager.setEncomenda(createEncomenda(dia, items, encomendaBolosArrayList));
+                encomendaManager.setEncomenda(new EncomendaV2(dia, products, items, encomendaBolosArrayList));
                 items.clear();
+                products.clear();
 
             }
             br.close();

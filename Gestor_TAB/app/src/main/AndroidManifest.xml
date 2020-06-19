@@ -16,27 +16,24 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        tools:ignore="GoogleAppIndexingWarning">
+
+        <activity android:name=".activitys.SnoozeActivity"></activity>
         <activity
-            android:name=".ui.login.LoginActivity"
-            android:label="@string/title_activity_login"></activity>
+            android:name=".activitys.LoginActivity"
+            android:label="@string/title_activity_login" />
 
-        <service
-            android:name=".GPSIntentService"
-            android:exported="false" />
-
-        <activity android:name=".activitys.EncomendaActivity" />
+        <activity android:name=".activitys.EncomendaActivityV4" />
         <activity android:name=".activitys.EditClientActivity" />
         <activity android:name=".activitys.ClienteActivity" />
         <activity android:name=".activitys.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <receiver android:name=".activitys.notifications.AlarmReceiver" />
     </application>
 
 </manifest>

@@ -9,6 +9,7 @@ import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
@@ -17,6 +18,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -24,7 +26,9 @@ import android.util.Log;
 import android.view.ContextMenu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -32,18 +36,25 @@ import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TabHost;
+import android.widget.TabWidget;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.gestor_tab.R;
+import com.example.gestor_tab.activitys.ClienteActivity_Functions.OutrasOpcoes;
+import com.example.gestor_tab.activitys.ClienteActivity_Functions.ShowInfoCliente;
 import com.example.gestor_tab.bt.Connection_bt;
 import com.example.gestor_tab.clientes.Cliente;
 import com.example.gestor_tab.clientes.Registo;
 import com.example.gestor_tab.clientes.RegistosManager;
 import com.example.gestor_tab.clientes.TabelaPrecos;
+import com.example.gestor_tab.database.ListaClientesBaseUtil;
 import com.example.gestor_tab.enumClasses.DecimalDigitsInputFilter;
 import com.example.gestor_tab.geocode.ReverseGeoCode;
 
@@ -59,10 +70,18 @@ import java.util.Locale;
 import static com.example.gestor_tab.database.DataBaseUtil.replaceOccurance;
 import static com.example.gestor_tab.database.ListaPrecosBaseUtil.getTabela;
 import static com.example.gestor_tab.database.LogsBaseUtil.deleteAllLogs;
+import static com.example.gestor_tab.database.LogsBaseUtil.getAllLogs;
 import static com.example.gestor_tab.database.LogsBaseUtil.getLogsClient;
 import static com.example.gestor_tab.database.LogsBaseUtil.logs;
+import static com.example.gestor_tab.database.LogsBaseUtil.saveAllLogs;
 
 public class ClienteActivity extends AppCompatActivity {
+
+    private static final String SYSTEM_CONFIG = "systemConfig";
+    private static final String SNOOZE_TIME = "snoozeTime";
+
+    private Handler handler;
+    private Runnable r;
 
     private Cliente cliente;
 
@@ -71,50 +90,32 @@ public class ClienteActivity extends AppCompatActivity {
     private TabelaPrecos tabelaPrecos;
 
     private boolean withRegisto = false;
+    private OutrasOpcoes outrasOpcoes;
+    private ShowInfoCliente showInfoCliente;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_cliente);
+        setContentView(R.layout.activity_cliente_v2);
         getSupportActionBar().hide();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         Intent intent = getIntent();
-        this.cliente = (Cliente) intent.getSerializableExtra("Cliente");
+        this.cliente = (Cliente) intent.getParcelableExtra("Cliente");
 
         if (this.cliente.getTipoPagamento().equals("LS")) {
             withRegisto = true;
         }
 
+        this.tabelaPrecos = getTabela(this);
+
         setDataOnScreen(withRegisto);
-
-        Spinner spinner = findViewById(R.id.spinner);
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View v,
-                                       int pos, long id) {
-
-                TextView pagar = findViewById(R.id.pagar);
-                Spinner despesa = findViewById(R.id.spinner);
-
-                if (withRegisto) {
-                    pagar.setText(String.format("%.2f €", registosManager.getTotalDespesa(cliente, despesa)));
-                } else {
-                    pagar.setText(String.format("%.2f €", cliente.getDespesa(despesa.getSelectedItem().toString())));
-                }
-
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> arg0) {
-
-            }
-        });
+        //inatividade();
 
     }
+
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
@@ -136,17 +137,52 @@ public class ClienteActivity extends AppCompatActivity {
         return true;
     }
 
+    private View.OnTouchListener Spinner_OnTouch = new View.OnTouchListener() {
+        public boolean onTouch(View v, MotionEvent event) {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (cliente.getTipoPagamento().equals("JD")) {
+                    final Spinner spinner2 = findViewById(R.id.spinner);
+
+                    chooseDateClienteJD(getApplicationContext(), spinner2);
+                }
+            }
+            return true;
+        }
+    };
     private void setDataOnScreen(boolean clienteWithRegisto) {
+        final Spinner spinner2 = findViewById(R.id.spinner);
+
+        if (cliente.getTipoPagamento().equals("JD")) {
+            spinner2.setOnTouchListener(Spinner_OnTouch);
+        } else {
+
+            spinner2.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View v,
+                                           int pos, long id) {
+                    updateValorToPay();
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> arg0) {
+
+                }
+            });
+        }
+
+
+
         registosManager = getLogsClient(getApplicationContext(), cliente.getId());
         ArrayList<String> pagarAte;
 
         TextView nome = findViewById(R.id.nome);
         nome.setText(this.cliente.getName());
 
-        TextView pagoAte = findViewById(R.id.ate);
+        TextView pagoAte = findViewById(R.id.descricao);
         pagoAte.setText("Pago até dia: " + this.cliente.getPagamento());
 
-        Spinner despesa = findViewById(R.id.spinner);
+        final Spinner despesa = findViewById(R.id.spinner);
         pagarAte = cliente.getNextDate();
         ArrayAdapter lista = new ArrayAdapter<String>(this, R.layout.spinner_item, pagarAte);
         despesa.setAdapter(lista);
@@ -186,6 +222,11 @@ public class ClienteActivity extends AppCompatActivity {
         extra.setText(String.format("%.2f", cliente.getDespesa()[7]));
 
         final TabHost tabHost = findViewById(R.id.tab);
+        final TabWidget tabs = tabHost.getTabWidget();
+
+        if (tabs != null)
+            tabs.removeAllViews();
+        //tabHost.clearAllTabs();
         tabHost.setup();
 
         TabHost.TabSpec spec;
@@ -218,10 +259,180 @@ public class ClienteActivity extends AppCompatActivity {
         //PARTE DOS CLIENTES LS
         if (!clienteWithRegisto)
             tabHost.getTabWidget().getChildAt(4).setVisibility(View.GONE);
+
+        if (clienteWithRegisto)
+            setQuantidadesNoRegisto();
+
+        TextView dataRegisto = findViewById(R.id.dataRegisto);
+        final Calendar c = Calendar.getInstance();
+        int mYear = c.get(Calendar.YEAR);
+        int mMonth = c.get(Calendar.MONTH);
+        int mDay = c.get(Calendar.DAY_OF_MONTH);
+
+
+        EditText latitude = findViewById(R.id.lat);
+        if (cliente.getCoordenadas() != null)
+            latitude.setText(cliente.getCoordenadas());
+        else
+            latitude.setText("NaN");
+
+        ReverseGeoCode reverseGeoCode = null;
+        try {
+            reverseGeoCode = new ReverseGeoCode(getResources().openRawResource(R.raw.pt), true);
+            //reverseGeoCode = new ReverseGeoCode(new FileInputStream(getExternalFilesDir(null) + "/pt.txt"), true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        TextView local = findViewById(R.id.localidade);
+
+        /*if (cliente.getLat()>0)
+             local.setText(reverseGeoCode.nearestPlace(cliente.getLat(), cliente.getLng()).toString());
+
+         */
+        //-----------------------------------------------------
+
+        dataRegisto.setText(mDay + "/" + (mMonth + 1) + "/" + mYear);
+
+
+        tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
+            @Override
+            public void onTabChanged(String s) {
+                int tab = tabHost.getCurrentTab();
+                if (tab == 1) {
+                    registosManager = getLogsClient(getApplicationContext(), cliente.getId());
+
+                    ListView listaDeEventos = (ListView) findViewById(R.id.eventos);
+
+                    final ArrayAdapter adapter;
+                    if (!registosManager.getRegistos().isEmpty()) {
+                        adapter = new ArrayAdapter<Registo>(
+                                ClienteActivity.this,
+                                android.R.layout.simple_list_item_1,
+                                registosManager.getRegistos());
+
+                    } else {
+                        ArrayList<String> infos = new ArrayList<>();
+                        infos.add("Sem registos!");
+                        adapter = new ArrayAdapter<String>(
+                                ClienteActivity.this,
+                                android.R.layout.simple_list_item_1,
+                                infos);
+                    }
+
+                    listaDeEventos.setAdapter(adapter);
+
+                    listaDeEventos.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                            if (adapter.getItem(0).toString().equals("Sem registos!")) {
+                                Toast.makeText(ClienteActivity.this, "Sem operações disponiveis!", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Registo registo = (Registo) adapter.getItem(position);
+                                if (registo.getTipo().equals("REGISTO")) {
+                                    deleteRegisto(registo);
+                                } else {
+                                    Toast.makeText(ClienteActivity.this, "Sem operações disponiveis", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }
+                    });
+
+                    registerForContextMenu(listaDeEventos);
+                } else if (tab == 2) {
+                    registosManager = getLogsClient(getApplicationContext(), cliente.getId());
+
+                    ListView listaDeEncomendas = (ListView) findViewById(R.id.encomendas);
+
+                    final ArrayList<String> infos = new ArrayList<>();
+                    for (int i = 0; i < registosManager.getRegistosEncomendas().size(); i++) {
+                        infos.add(registosManager.getRegistosEncomendas().get(i).toStringEncomenda());
+                    }
+
+                    if (infos.isEmpty()) {
+                        infos.add("Sem registos!");
+                    }
+
+                    ArrayAdapter adapter = new ArrayAdapter<String>(
+                            ClienteActivity.this,
+                            android.R.layout.simple_list_item_1,
+                            infos);
+
+                    listaDeEncomendas.setAdapter(adapter);
+
+                    listaDeEncomendas.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                            if (infos.get(0).equals("Sem registos!")) {
+                                Toast.makeText(ClienteActivity.this, "Sem operações disponiveis!", Toast.LENGTH_SHORT).show();
+                            } else {
+                                if (!verificaEncomendaPassada(registosManager.getRegistosEncomendas().get(position))) {
+                                    alterarEncomenda(position, registosManager.getRegistosEncomendas().get(position));
+                                } else {
+                                    Toast.makeText(ClienteActivity.this, "Encomenda com data anterior ao ultimo pagamento!", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                            }
+                        }
+                    });
+
+                    registerForContextMenu(listaDeEncomendas);
+                }
+            }
+        });
+
+        tabHost.setCurrentTab(0);
+    }
+
+    private int getIntDia(Calendar DateDia) {
+
+        int dia = DateDia.get(Calendar.DAY_OF_WEEK) - 2;
+        if (dia == -1)
+            dia = 6;
+
+        return dia;
+    }
+
+    private void setQuantidadesNoRegisto() {
+        Date hj = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(hj);
+
+        boolean first = true;
+        String hoje = Cliente.dias[getIntDia(calendar)];
+
+        for (String dia : this.cliente.getQuantidades().keySet()) {
+            if (dia.equals(hoje)) {
+
+                for (String produto : this.cliente.getQuantidades().get(dia).keySet()) {
+
+                    if (first) {
+                        first = false;
+                    }
+
+                    addProdutoTabelaPrecosLS(produto, this.cliente.getQuantidades().get(dia).get(produto));
+                }
+
+                if (first) {
+                    setFirstRow();
+                } else {
+                    removefirstRow();
+                }
+            }
+        }
+    }
+
+    private void removefirstRow() {
+        LinearLayout linearLayout = findViewById(R.id.listaItems);
+
+        linearLayout.removeViewAt(0);
+    }
+
+    private void setFirstRow() {
         this.tabelaPrecos = getTabela(getApplicationContext());
         Spinner spinner = findViewById(R.id.listaPao);
         final EditText editText = findViewById(R.id.quantidadeProduto);
         ArrayAdapter produtos;
+
         if (tabelaPrecos == null) {
             ArrayList<String> listaErro = new ArrayList();
             listaErro.add("Nenhum produto encontrado!");
@@ -229,6 +440,7 @@ public class ClienteActivity extends AppCompatActivity {
         } else {
             produtos = new ArrayAdapter<String>(this, R.layout.spinner_item, tabelaPrecos.getProdutos());
         }
+
         spinner.setAdapter(produtos);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -251,101 +463,135 @@ public class ClienteActivity extends AppCompatActivity {
 
             }
         });
+    }
 
-        TextView dataRegisto = findViewById(R.id.dataRegisto);
-        final Calendar c = Calendar.getInstance();
-        int mYear = c.get(Calendar.YEAR);
-        int mMonth = c.get(Calendar.MONTH);
-        int mDay = c.get(Calendar.DAY_OF_MONTH);
+    private void updateValorToPay() {
+        TextView pagar = findViewById(R.id.pagar);
+        Spinner despesa = findViewById(R.id.spinner);
 
-        EditText latitude = findViewById(R.id.lat);
-        if (cliente.getCoordenadas() != null)
-            latitude.setText(cliente.getCoordenadas());
-        else
-            latitude.setText("NaN");
-
-        ReverseGeoCode reverseGeoCode = null;
-        try {
-            reverseGeoCode = new ReverseGeoCode(getResources().openRawResource(R.raw.pt), true);
-            //reverseGeoCode = new ReverseGeoCode(new FileInputStream(getExternalFilesDir(null) + "/pt.txt"), true);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (withRegisto) {
+            pagar.setText(String.format("%.2f €", registosManager.getTotalDespesa(cliente, despesa)));
+        } else {
+            pagar.setText(String.format("%.2f €", cliente.getDespesa(despesa.getSelectedItem().toString())));
         }
-        TextView local = findViewById(R.id.localidade);
+    }
 
-        if (cliente.getLat()>0)
-             local.setText(reverseGeoCode.nearestPlace(cliente.getLat(), cliente.getLng()).toString());
-        //-----------------------------------------------------
+    private void deleteRegisto(final Registo registo) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(ClienteActivity.this);
 
-        dataRegisto.setText(mDay + "/" + (mMonth + 1) + "/" + mYear);
+        builder.setTitle("Opções Disponiveis!");
 
+        final RadioGroup radioGroup = new RadioGroup(this);
 
-        tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
+        final RadioButton radioButton1 = new RadioButton(this);
+        radioButton1.setText("Eliminar registo!");
+
+        /*final RadioButton radioButton2 = new RadioButton(this);
+        radioButton2.setText("Alterar encomenda! (indisponivel)");*/
+
+        radioGroup.addView(radioButton1);
+        //radioGroup.addView(radioButton2);
+
+        builder.setView(radioGroup);
+
+        builder.setPositiveButton("Escolher", new DialogInterface.OnClickListener() {
             @Override
-            public void onTabChanged(String s) {
-                int tab = tabHost.getCurrentTab();
-                if (tab == 1) {
-                    registosManager = getLogsClient(getApplicationContext(), cliente.getId());
+            public void onClick(DialogInterface dialog, int which) {
+                int checkedRadioButtonId = radioGroup.getCheckedRadioButtonId();
+                if (checkedRadioButtonId == -1) {
+                    Toast.makeText(ClienteActivity.this, "Nenhuma opção selecionada", Toast.LENGTH_SHORT).show();
 
-                    ListView listaDeEventos = (ListView) findViewById(R.id.eventos);
-
-                    ArrayAdapter adapter;
-                    if (!registosManager.getRegistos().isEmpty()) {
-                        adapter = new ArrayAdapter<Registo>(
-                                ClienteActivity.this,
-                                android.R.layout.simple_list_item_1,
-                                registosManager.getRegistos());
-
-                    } else {
-                        ArrayList<String> infos = new ArrayList<>();
-                        infos.add("Sem registos!");
-                        adapter = new ArrayAdapter<String>(
-                                ClienteActivity.this,
-                                android.R.layout.simple_list_item_1,
-                                infos);
+                }
+                else{
+                    if (checkedRadioButtonId == radioButton1.getId()) {
+                        deleteRegistosAndSave(registo);
+                        voltar(null);
                     }
-
-                    listaDeEventos.setAdapter(adapter);
-                    registerForContextMenu(listaDeEventos);
-                } else if (tab == 2) {
-                    registosManager = getLogsClient(getApplicationContext(), cliente.getId());
-
-                    ListView listaDeEncomendas = (ListView) findViewById(R.id.encomendas);
-
-                    ArrayList<String> infos = new ArrayList<>();
-                    for (int i = 0; i < registosManager.getRegistosEncomendas().size(); i++) {
-                        infos.add(registosManager.getRegistosEncomendas().get(i).toStringEncomenda());
-                    }
-
-                    if (infos.isEmpty()) {
-                        infos.add("Sem registos!");
-                    }
-
-                    ArrayAdapter adapter = new ArrayAdapter<String>(
-                            ClienteActivity.this,
-                            android.R.layout.simple_list_item_1,
-                            infos);
-
-                    listaDeEncomendas.setAdapter(adapter);
-                    registerForContextMenu(listaDeEncomendas);
                 }
             }
         });
 
-        tabHost.setCurrentTab(0);
+        builder.show();
+    }
+
+    private void alterarEncomenda(final int positionEncomenda, final Registo registo) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(ClienteActivity.this);
+
+        builder.setTitle("Opções Disponiveis!");
+
+        final RadioGroup radioGroup = new RadioGroup(this);
+
+        final RadioButton radioButton1 = new RadioButton(this);
+        radioButton1.setText("Eliminar encomenda!");
+
+        /*final RadioButton radioButton2 = new RadioButton(this);
+        radioButton2.setText("Alterar encomenda! (indisponivel)");*/
+
+        radioGroup.addView(radioButton1);
+        //radioGroup.addView(radioButton2);
+
+        builder.setView(radioGroup);
+
+        builder.setPositiveButton("Escolher", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int checkedRadioButtonId = radioGroup.getCheckedRadioButtonId();
+                if (checkedRadioButtonId == -1) {
+                    Toast.makeText(ClienteActivity.this, "Nenhuma opção selecionada", Toast.LENGTH_SHORT).show();
+
+                }
+                else{
+                    if (checkedRadioButtonId == radioButton1.getId()) {
+                        deleteRegistosAndSave(registo);
+                        voltar(null);
+                    }
+                }
+            }
+        });
+
+        builder.show();
+
+    }
+
+    private void deleteRegistosAndSave(Registo registo) {
+        RegistosManager registosManager = getAllLogs(getApplicationContext());
+
+        registosManager = registosManager.deleteRegisto(registo);
+
+        saveAllLogs(getApplicationContext(), registosManager);
+
+        Toast.makeText(this, "Registo Eliminado", Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean verificaEncomendaPassada(Registo registo) {
+
+        if (registo.getDateEncomenda().before(cliente.getPagamentoDate())
+                || registo.getDateEncomenda().equals(cliente.getPagamentoDate())
+        ) {
+            return true;
+        }
+
+        return false;
     }
 
     public void addExtra(View view) {
+        final Activity activity = this;
+
+        final LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1);
 
         final Spinner spinner = new Spinner(ClienteActivity.this);
         ArrayAdapter<String> lista = new ArrayAdapter<String>(this, R.layout.spinner_item);
         lista.add("Adicionar");
         lista.add("Descontar");
         spinner.setAdapter(lista);
+        spinner.setLayoutParams(params);
+
 
         final EditText editText = new EditText(ClienteActivity.this);
         editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
         editText.setFilters(new InputFilter[]{new DecimalDigitsInputFilter(9, 2)});
+        editText.setLayoutParams(params);
+
 
         LinearLayout layout = new LinearLayout(ClienteActivity.this);
         layout.addView(spinner);
@@ -378,13 +624,14 @@ public class ClienteActivity extends AppCompatActivity {
 
                         //MainActivity.saveChanges(getApplicationContext(), cliente);
                         logs(getApplicationContext(), 0, cliente.getId(), info);
-
-                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                        intent.putExtra("Cliente", cliente);
-                        intent.putExtra("refresh", 1);
-                        startActivity(intent);
+                        new ListaClientesBaseUtil(activity).guarda_em_ficheiro(cliente);
 
                         Toast.makeText(ClienteActivity.this, "Operação realizada com sucesso!", Toast.LENGTH_SHORT).show();
+
+                        setDataOnScreen(withRegisto);
+                        final TabHost tabHost = findViewById(R.id.tab);
+                        tabHost.setCurrentTab(1);
+                        tabHost.setCurrentTab(0);
                     }
                 })
 
@@ -542,6 +789,60 @@ public class ClienteActivity extends AppCompatActivity {
         spinner.setAdapter(adapter);
     }
 
+    public void chooseDateClienteJD(final Context context, final Spinner spinner) {
+        int mYear, mMonth, mDay;
+
+        // Get Current Date
+        final Calendar c = Calendar.getInstance();
+        mYear = c.get(Calendar.YEAR);
+        mMonth = c.get(Calendar.MONTH);
+        mDay = c.get(Calendar.DAY_OF_MONTH);
+
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                new DatePickerDialog.OnDateSetListener() {
+
+                    @Override
+                    public void onDateSet(DatePicker view, int year,
+                                          int monthOfYear, int dayOfMonth) {
+                        ArrayList<String> arrayList = new ArrayList<String>();
+                        arrayList.add(dayOfMonth + "/" + (monthOfYear + 1) + "/" + year);
+
+                        ArrayAdapter lista = new ArrayAdapter<String>(context, R.layout.spinner_item, arrayList);
+
+                        spinner.setAdapter(lista);
+                        updateValorToPay();
+
+                    }
+                }, mYear, mMonth, mDay);
+        datePickerDialog.show();
+    }
+
+    public void chooseDateSetInTextview(View view) {
+        final TextView textViewDate = findViewById(R.id.textView44);
+
+        int mYear, mMonth, mDay;
+
+        // Get Current Date
+        final Calendar c = Calendar.getInstance();
+        mYear = c.get(Calendar.YEAR);
+        mMonth = c.get(Calendar.MONTH);
+        mDay = c.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                new DatePickerDialog.OnDateSetListener() {
+
+                    @Override
+                    public void onDateSet(DatePicker view, int year,
+                                          int monthOfYear, int dayOfMonth) {
+
+                        textViewDate.setText(dayOfMonth + "/" + (monthOfYear + 1) + "/" + year);
+                    }
+                }, mYear, mMonth, mDay);
+
+        datePickerDialog.show();
+    }
+
     public void chooseDate(View view) {
         int mYear, mMonth, mDay;
         final TextView txtDate = findViewById(R.id.date);
@@ -591,10 +892,73 @@ public class ClienteActivity extends AppCompatActivity {
         datePickerDialog.show();
     }
 
-    public void addProdutoTabelaPrecos(View view) {
+    public void addProdutoTabelaPrecosLS(String produtoID, int quantidade) {
 
         LinearLayout linearLayout = findViewById(R.id.listaItems);
         LinearLayout linearLayoutRow = findViewById(R.id.row);
+
+        LinearLayout newLayout = new LinearLayout(this);
+
+        LinearLayout.LayoutParams paramParent = (LinearLayout.LayoutParams) linearLayout.getChildAt(0).getLayoutParams();
+        newLayout.setLayoutParams(paramParent);
+
+        LinearLayout.LayoutParams paramSpinner = (LinearLayout.LayoutParams) linearLayoutRow.getChildAt(0).getLayoutParams();
+        LinearLayout.LayoutParams paramText = (LinearLayout.LayoutParams) linearLayoutRow.getChildAt(1).getLayoutParams();
+
+        newLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+        Spinner spinner = new Spinner(this);
+        ArrayAdapter produtos = new ArrayAdapter<String>(this, R.layout.spinner_item, tabelaPrecos.getProdutos());
+        spinner.setAdapter(produtos);
+
+        String nomeProdutoFromID = tabelaPrecos.getNomeProdutoFromID(produtoID);
+        spinner.setSelection(produtos.getPosition(nomeProdutoFromID));
+
+        spinner.setLayoutParams(paramSpinner);
+
+
+        final EditText editText = new EditText(this);
+        editText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+        editText.setText("0");
+        editText.setLayoutParams(paramText);
+        editText.setEms(10);
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!tabelaPrecos.getProdutosIsUnit(position)) {
+                    editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
+                    editText.setFilters(new InputFilter[] {new DecimalDigitsInputFilter(9,3)});
+                } else {
+                    try {
+                        Integer.parseInt(editText.getText().toString());
+                    } catch (NumberFormatException e) {
+                        editText.setText("0");
+                    }
+                    editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+        editText.setText(Integer.toString(quantidade));
+
+        newLayout.addView(spinner);
+        newLayout.addView(editText);
+
+        linearLayout.addView(newLayout, linearLayout.getChildCount() - 2);
+    }
+
+    public void addProdutoTabelaPrecos(View view) {
+
+        LinearLayout linearLayout = findViewById(R.id.listaItems);
+        //LinearLayout linearLayoutRow = findViewById(R.id.row);
+        LinearLayout linearLayoutRow = (LinearLayout) linearLayout.getChildAt(0);
 
         LinearLayout newLayout = new LinearLayout(this);
 
@@ -708,6 +1072,8 @@ public class ClienteActivity extends AppCompatActivity {
         linearLayout.addView(newLayout, linearLayout.getChildCount() - 1);
     }
 
+
+
     public void saveEncomenda(View view) {
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         Date date = new Date();
@@ -734,7 +1100,7 @@ public class ClienteActivity extends AppCompatActivity {
 
         boolean encomenda = false;
         String text = "";
-        int quantidade;
+        float quantidade;
         LinearLayout verticalLayout = findViewById(R.id.listaItems);
 
         text += "Encomenda para dia " + data.getText().toString() + ",";
@@ -746,11 +1112,18 @@ public class ClienteActivity extends AppCompatActivity {
             Spinner spinner = (Spinner) row.getChildAt(0);
             EditText editText = (EditText) row.getChildAt(1);
 
-            quantidade = Integer.parseInt(editText.getText().toString());
+            quantidade = Float.parseFloat(editText.getText().toString());
 
             if (quantidade > 0) {
                 encomenda = true;
-                text += "]" + spinner.getSelectedItem().toString() + " ; " + quantidade + ",";
+                if (quantidade % 1 == 0) {
+                    text += "]" + spinner.getSelectedItem().toString() + " ; " + String.format("%.0f", quantidade) + ",";
+                } else {
+                    String number = String.format("%.3f", quantidade);
+                    number = number.replace(",", "&");
+
+                    text += "]" + spinner.getSelectedItem().toString() + " ; " + number + ",";
+                }
             }
         }
 
@@ -761,13 +1134,19 @@ public class ClienteActivity extends AppCompatActivity {
         if (encomenda)
             logs(this, 3, cliente.getId(), text);
 
-        setContentView(R.layout.activity_cliente);
+        setContentView(R.layout.activity_cliente_v2);
         setDataOnScreen(withRegisto);
     }
 
     public void voltar(View view) {
-        setContentView(R.layout.activity_cliente);
+        setContentView(R.layout.activity_cliente_v2);
         setDataOnScreen(withRegisto);
+
+        /*Intent myIntent = new Intent(this, ClienteActivity.class);
+        myIntent.putExtra("Cliente", cliente);
+
+        startActivity(myIntent);
+        finish();*/
     }
 
     public void voltarMain(View view) {
@@ -797,7 +1176,9 @@ public class ClienteActivity extends AppCompatActivity {
             return;
         }
 
-        new AlertDialog.Builder(this)
+        final LinearLayout layout = new LinearLayout(this);
+
+        final AlertDialog.Builder alertDialog = new AlertDialog.Builder(this)
 
                 .setTitle("Pretende Imprimir a conta?")
 
@@ -809,7 +1190,14 @@ public class ClienteActivity extends AppCompatActivity {
                             if (cliente.getTipoPagamento().equals("LS")) {
                                 bt.imprimeLS();
                             } else {
-                                bt.imprime(cliente);
+                                ArrayList<String> encomendas = new ArrayList<>();
+
+                                for (int k = 0; k< layout.getChildCount(); k++) {
+                                    CheckBox checkBox =(CheckBox)layout.getChildAt(k);
+                                    encomendas.add(checkBox.getText().toString());
+                                }
+
+                                bt.imprime(cliente, encomendas);
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -822,10 +1210,23 @@ public class ClienteActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialogInterface, int i) {
 
                     }
-                })
+                });
 
-                .show();
 
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        for (Registo registo : registosManager.getRegistosEncomendasAfterDay(cliente.getPagamentoDate())) {
+            CheckBox checkBox = new CheckBox(this);
+            checkBox.setText(registo.toStringEncomenda());
+            checkBox.setChecked(false);
+
+            layout.addView(checkBox);
+        }
+
+        alertDialog.setView(layout);
+
+
+        alertDialog.show();
 
     }
 
@@ -836,6 +1237,7 @@ public class ClienteActivity extends AppCompatActivity {
         float total = 0;
         ArrayList<Float> tabelaCliente = this.tabelaPrecos.getTabelaPrecosCliente(this.cliente.getId());
 
+        TabHost tabHost = findViewById(R.id.tab);
         LinearLayout verticalLayout = findViewById(R.id.listaItems);
         TextView data = findViewById(R.id.dataRegisto);
         info += "Registo do dia " + data.getText().toString() + " ";
@@ -868,15 +1270,11 @@ public class ClienteActivity extends AppCompatActivity {
 
             this.cliente.updateDay(total, data.getText().toString());
 
-            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-            intent.putExtra("Cliente", this.cliente);
-            intent.putExtra("refresh", 1);
-            startActivity(intent);
-            finish();
-            //setDataOnScreenLD(false);
+            new ListaClientesBaseUtil(this).guarda_em_ficheiro(this.cliente);
+            tabHost.setCurrentTab(0);
+
         } else {
             Toast.makeText(getApplicationContext(), "Operação errada: sem dados novos", Toast.LENGTH_SHORT).show();
-
         }
 
     }
@@ -1014,5 +1412,43 @@ public class ClienteActivity extends AppCompatActivity {
         intent.putExtra("Cliente", this.cliente);
         intent.putExtra("refresh", 1);
         startActivity(intent);
+    }
+
+    public void outrasOpcoes(View view) {
+        outrasOpcoes = new OutrasOpcoes(this, cliente);
+        outrasOpcoes.run();
+    }
+
+    public void saveAlteracao(View view) {
+        TextView data = findViewById(R.id.textView44);
+        float[] despesa = outrasOpcoes.getDataFromScreen();
+        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        Date date;
+        String todayDate = dateFormat.format(new Date());
+
+        String info = this.cliente.alteracaoQuantidade(despesa, data.getText().toString());
+
+        if (info != null) {
+            logs(getApplicationContext(), 2, this.cliente.getId(), info);
+            logs(getApplicationContext(), 11, this.cliente.getId(), "Alteração dos valores da despesa-" + todayDate);
+
+            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+            intent.putExtra("Cliente", this.cliente);
+            intent.putExtra("refresh", 1);
+            startActivity(intent);
+            finish();
+        } else {
+            Toast.makeText(getApplicationContext(), "Algo correu mal", Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+    public void showInfoCliente(View view) {
+        showInfoCliente = new ShowInfoCliente(this, this.cliente, this.tabelaPrecos);
+        showInfoCliente.run();
+    }
+
+    public void setDespesaInChangeQuantidadesLayout() {
+        outrasOpcoes.setDataOnScreen();
     }
 }

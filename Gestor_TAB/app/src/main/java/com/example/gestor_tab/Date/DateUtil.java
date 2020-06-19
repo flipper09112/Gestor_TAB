@@ -12,7 +12,7 @@ public class DateUtil {
     private SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
     //System.out.println(formatter.format(date));
 
-    public ArrayList<String> getNextSunday(Date ultimoPagamento) {
+    public ArrayList<String> getNextSunday(Date ultimoPagamento, final float extra) {
         ArrayList<String> listaDatas = new ArrayList<>();
         boolean antesQuarta = false;
 
@@ -25,6 +25,12 @@ public class DateUtil {
 
         if (calendar.get(Calendar.DAY_OF_WEEK) <= Calendar.WEDNESDAY && !(calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)) {
             antesQuarta = true;
+        }
+
+        if (extra > 0) {
+            if (ultimoPag.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+                listaDatas.add(formatter.format(ultimoPag.getTime()));
+            }
         }
 
         while (ultimoPag.before(calendar)) {
@@ -91,13 +97,33 @@ public class DateUtil {
             return listaDatas;
         }
 
-        if (calendar.get(Calendar.DAY_OF_MONTH) < 15) {
+        if (calendar.get(Calendar.DAY_OF_MONTH) < 15 && listaDatas.size() > 1) {
             String toMove = listaDatas.get(1);
             listaDatas.set(1, listaDatas.get(0));
             listaDatas.set(0, toMove);
         }
 
         return listaDatas;
+
+    }
+
+    public static Date getNextDomingo(final Date date) {
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+
+        while (c.get(Calendar.DAY_OF_WEEK) != c.SUNDAY) {
+            c.add(Calendar.DATE, 1);
+        }
+
+        return c.getTime();
+    }
+
+    public static Date addDaysToDate(Date date, int days) {
+
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        c.add(Calendar.DATE, days);
+        return c.getTime();
 
     }
 }

@@ -53,7 +53,9 @@ public class LogsBaseUtil extends DataBaseUtil {
      *                <p>6 - Registo Lojas</p>
      *                <p>7 - Sobras do dia</p>
      *                <p>8 - Criação de um novo Cliente</p>
-     *                <p>8 - Remoção de um Cliente</p>
+     *                <p>9 - Remoção de um Cliente</p>
+     *                <p>10 - Registo de "all" o material encomendado </p>
+     *                <p>11 - Informação generica </p>
      */
     public static void logs(Context context, int tipo, int id, String info) {
         String[] listaEventos = {
@@ -66,7 +68,9 @@ public class LogsBaseUtil extends DataBaseUtil {
                 "REGISTO [" + id + "]",
                 "SOBRA [" + id + "]",
                 "NOVOCLIENTE [" + id + "]",
-                "REMOVECLIENTE [" + id + "]"
+                "REMOVECLIENTE [" + id + "]",
+                "TOTALENCOMENDA [" + id + "]",
+                "INFO [" + id + "]"
         };
 
         String data = listaEventos[tipo] + ": " + info;
@@ -97,7 +101,7 @@ public class LogsBaseUtil extends DataBaseUtil {
             BufferedReader br = new BufferedReader(new FileReader(fileEvents));
             String line;
             while ((line = br.readLine()) != null) {
-                System.out.println(line);
+                //System.out.println(line);
                 String[] lineSplit = line.split(":");
                 String tipo = lineSplit[0].split(" ")[0];
 
@@ -111,7 +115,6 @@ public class LogsBaseUtil extends DataBaseUtil {
 
                 String info;
                 if (tipo.equals("PAGAMENTO") || tipo.equals("EXTRA")) {
-
                     //get info
                     info = lineSplit[1];
                     info = info.substring(1, info.indexOf("€")+1);
@@ -121,8 +124,9 @@ public class LogsBaseUtil extends DataBaseUtil {
                     info = info.substring(1, info.indexOf("-"));
                 }
 
-                else if (tipo.equals("ENCOMENDA") || tipo.equals("REGISTO")) {
+                else if (tipo.equals("ENCOMENDA") || tipo.equals("REGISTO") || tipo.equals("TOTALENCOMENDA")) {
                     info = lineSplit[1].replaceAll(",", "\n");
+                    info = info.replaceAll("&", ".");
                     info = info.substring(1, info.indexOf("-"));
                     if (tipo.equals("REGISTO")) {
                         info = info.replaceAll("]", "\t");
@@ -146,6 +150,10 @@ public class LogsBaseUtil extends DataBaseUtil {
                         info = info.substring(1, info.indexOf("-"));
 
                 } else if (tipo.equals("INATIVIDADE") || tipo.equals("NOVOCLIENTE") || tipo.equals("REMOVECLIENTE")) {
+                    info = lineSplit[1];
+                    info = info.substring(1, info.indexOf("-"));
+                } else if (tipo.equals("INFO")) {
+                    //get info
                     info = lineSplit[1];
                     info = info.substring(1, info.indexOf("-"));
                 }
@@ -179,6 +187,7 @@ public class LogsBaseUtil extends DataBaseUtil {
             BufferedReader br = new BufferedReader(new FileReader(fileEvents));
             String line;
             while ((line = br.readLine()) != null) {
+                System.out.println(line);
                 String[] lineSplit = line.split(":");
                 String tipo = lineSplit[0].split(" ")[0];
 
@@ -202,8 +211,9 @@ public class LogsBaseUtil extends DataBaseUtil {
                     info = info.substring(1, info.indexOf("-"));
                 }
 
-                else if (tipo.equals("ENCOMENDA") || tipo.equals("REGISTO")) {
+                else if (tipo.equals("ENCOMENDA") || tipo.equals("REGISTO") || tipo.equals("TOTALENCOMENDA")) {
                     info = lineSplit[1].replaceAll(",", "\n");
+                    info = info.replaceAll("&", ".");
                     info = info.substring(1, info.indexOf("-"));
                     if (tipo.equals("REGISTO")) {
                         info = info.replaceAll("]", "\t");
@@ -227,6 +237,11 @@ public class LogsBaseUtil extends DataBaseUtil {
                         info = info.substring(1, info.indexOf("-"));
 
                 } else if (tipo.equals("INATIVIDADE") || tipo.equals("NOVOCLIENTE") || tipo.equals("REMOVECLIENTE")) {
+                    info = lineSplit[1];
+                    info = info.substring(1, info.indexOf("-"));
+
+                } else if (tipo.equals("INFO")) {
+                    //get info
                     info = lineSplit[1];
                     info = info.substring(1, info.indexOf("-"));
                 }
@@ -261,7 +276,7 @@ public class LogsBaseUtil extends DataBaseUtil {
             BufferedReader br = new BufferedReader(new FileReader(fileEvents));
             String line;
             while ((line = br.readLine()) != null) {
-                System.out.println(line);
+                //System.out.println(line);
                 String[] lineSplit = line.split(":");
                 String tipo = lineSplit[0].split(" ")[0];
 
@@ -283,6 +298,7 @@ public class LogsBaseUtil extends DataBaseUtil {
 
                 if (tipo.equals("ENCOMENDA") && dateFormat.format(data).equals(dateFormat.format(hj))) {
                     info = lineSplit[1].replaceAll(",", "\n");
+                    info = info.replaceAll("&", ".");
                     info = info.substring(0, info.indexOf("-"));
 
                     registos.add(new Registo(Integer.parseInt(logId), lineSplit[0].split(" ")[0], info, dateFormat.format(data)));
@@ -313,7 +329,7 @@ public class LogsBaseUtil extends DataBaseUtil {
 
     public static void saveAllLogs(final Context context, final RegistosManager registosManager) {
         try {
-            File fileEvents = new File(context.getExternalFilesDir(null)+"/logsTest", fileName);
+            File fileEvents = new File(context.getExternalFilesDir(null)+"/logs", fileName);
             FileWriter writer = new FileWriter(fileEvents);
 
             ArrayList<Registo> registos = registosManager.getAllRegistos();
@@ -328,6 +344,5 @@ public class LogsBaseUtil extends DataBaseUtil {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 }

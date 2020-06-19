@@ -20,10 +20,12 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Random;
 
 import jxl.Sheet;
 import jxl.Workbook;
+import jxl.WorkbookSettings;
 import jxl.read.biff.BiffException;
 import jxl.write.Label;
 import jxl.write.WritableSheet;
@@ -82,6 +84,9 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
         Date pagamento = new Date();
         SimpleDateFormat ft = new SimpleDateFormat ("dd/MM/yyyy");
         String name;
+        String morada;
+        String alcunha;
+        int noPorta;
         int number;
         String tipoPagamento;
         float despesa[] = new float[8];
@@ -89,6 +94,9 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
         String ativo;
         String dataInicio;
         String dataFim;
+
+        String[] dias = {"SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"};
+        HashMap<String, HashMap<String, Integer>> quantidadesDescricao = new HashMap<>();
 
         final ArrayList<Cliente> clienteArrayList = new ArrayList<>();
 
@@ -103,6 +111,25 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
 
                 name = sheet.getCell(TablePosition.NOME.getValue(),i).getContents();
                 number = Integer.parseInt(sheet.getCell(TablePosition.ID.getValue(),i).getContents());
+
+                if (sheet.getCell(TablePosition.MORADA.getValue(),i).getContents().equals("-")) {
+                    morada = null;
+                } else {
+                    morada = sheet.getCell(TablePosition.MORADA.getValue(),i).getContents();
+                }
+
+                if (sheet.getCell(TablePosition.NPORTA.getValue(),i).getContents().equals("-")) {
+                    noPorta = 0;
+                } else {
+                    noPorta = Integer.parseInt(sheet.getCell(TablePosition.NPORTA.getValue(),i).getContents());
+                }
+
+                if (sheet.getCell(TablePosition.ALCUNHA.getValue(),i).getContents().equals("-")) {
+                    alcunha = null;
+                } else {
+                    alcunha = sheet.getCell(TablePosition.ALCUNHA.getValue(),i).getContents();
+                }
+
                 try {
                     if (!sheet.getCell(TablePosition.PAGAMENTO.getValue(),i).getContents().equals("NULL")) {
                         pagamento = ft.parse(sheet.getCell(TablePosition.PAGAMENTO.getValue(),i).getContents());
@@ -132,7 +159,14 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
                 dataInicio = sheet.getCell(TablePosition.INICIO_INITAVIDADE.getValue(),i).getContents();
                 dataFim = sheet.getCell(TablePosition.FIM_INITAVIDADE.getValue(),i).getContents();
 
-                clienteArrayList.add(new Cliente(name, number, pagamento, tipoPagamento, despesa));
+                int contador = TablePosition.DESCRICAO_SEGUNDA.getValue();
+                quantidadesDescricao = new HashMap<>();
+                for (String dia : dias) {
+                    quantidadesDescricao.put(dia, getHashMapFromDay(sheet.getCell(contador, i).getContents()));
+                    contador++;
+                }
+
+                clienteArrayList.add(new Cliente(name, number, pagamento, tipoPagamento, despesa, morada, alcunha, noPorta, quantidadesDescricao));
 
                 if (!coordenadas.equals("null")) {
                     clienteArrayList.get(clienteArrayList.size()-1).setCoordenadas(coordenadas);
@@ -157,11 +191,34 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
 
     }
 
+    private HashMap<String, Integer> getHashMapFromDay(String contents) {
+        HashMap<String, Integer> hashMap = new HashMap<>();
+
+        String produtoId;
+        int quantidade;
+
+        for (String array : contents.split(";")) {
+            if (array.equals("-"))
+                break;
+
+            produtoId = array.split("-")[0];
+            quantidade = Integer.parseInt(array.split("-")[1]);
+
+            hashMap.put(produtoId, quantidade);
+        }
+
+        return hashMap;
+    }
+
     public void guarda_em_ficheiro(final ClientsManager clientsManager) {
         final ArrayList<Cliente> clientes = clientsManager.getClientsList();
+
+        WorkbookSettings ws = new WorkbookSettings();
+        ws.setEncoding("Cp1252");
+
         WritableWorkbook wb = null;
         try {
-            wb = Workbook.createWorkbook(file);
+            wb = Workbook.createWorkbook(file, ws);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -170,6 +227,11 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
 
         Label label = new Label(TablePosition.NOME.getValue(),0,"Nome");
         Label labe2 = new Label(TablePosition.ID.getValue(),0,"ID");
+
+        Label labe17 = new Label(TablePosition.MORADA.getValue(),0,"Morada");
+        Label labe18 = new Label(TablePosition.NPORTA.getValue(),0,"NoPorta");
+        Label labe19 = new Label(TablePosition.ALCUNHA.getValue(),0,"Alcunha");
+
         Label labe3 = new Label(TablePosition.PAGAMENTO.getValue(),0,"Pagamento");
         Label labe4 = new Label(TablePosition.TIPO.getValue(),0,"Tipo");
         Label labe5 = new Label(TablePosition.SEGUNDA.getValue(),0,"SEG");
@@ -184,6 +246,14 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
         Label labe14 = new Label(TablePosition.ATIVO.getValue(),0,"Ativo");
         Label labe15 = new Label(TablePosition.INICIO_INITAVIDADE.getValue(),0,"Inicio Inatividade");
         Label labe16 = new Label(TablePosition.FIM_INITAVIDADE.getValue(),0,"Fim Inatividade");
+
+        Label labe20 = new Label(TablePosition.DESCRICAO_SEGUNDA.getValue(),0,"DESC_SEG");
+        Label labe21 = new Label(TablePosition.DESCRICAO_TERCA.getValue(),0,"DESC_TER");
+        Label labe22 = new Label(TablePosition.DESCRICAO_QUARTA.getValue(),0,"DESC_QUA");
+        Label labe23 = new Label(TablePosition.DESCRICAO_QUINTA.getValue(),0,"DESC_QUI");
+        Label labe24 = new Label(TablePosition.DESCRICAO_SEXTA.getValue(),0,"DESC_SEX");
+        Label labe25 = new Label(TablePosition.DESCRICAO_SABADO.getValue(),0,"DESC_SAB");
+        Label labe26 = new Label(TablePosition.DESCRICAO_DOMINGO.getValue(),0,"DESC_DOM");
 
 
         try {
@@ -204,6 +274,18 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
             plan.addCell(labe15);
             plan.addCell(labe16);
 
+            plan.addCell(labe17);
+            plan.addCell(labe18);
+            plan.addCell(labe19);
+
+            plan.addCell(labe20);
+            plan.addCell(labe21);
+            plan.addCell(labe22);
+            plan.addCell(labe23);
+            plan.addCell(labe24);
+            plan.addCell(labe25);
+            plan.addCell(labe26);
+
         } catch (RowsExceededException e1) {
             e1.printStackTrace();
         } catch (WriteException e1) {
@@ -213,6 +295,11 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
         for (int i=1;i<=clientes.size();i++){
             label = new Label(TablePosition.NOME.getValue(),i,clientes.get(i-1).getName());
             labe2 = new Label(TablePosition.ID.getValue(),i,Integer.toString(clientes.get(i-1).getId()));
+
+            labe17 = new Label(TablePosition.MORADA.getValue(), i, clientes.get(i-1).getMorada());
+            labe18 = new Label(TablePosition.NPORTA.getValue(), i, Integer.toString(clientes.get(i-1).getNPorta()));
+            labe19 = new Label(TablePosition.ALCUNHA.getValue(), i, clientes.get(i-1).getAlcunha());
+
             labe3 = new Label(TablePosition.PAGAMENTO.getValue(),i,clientes.get(i-1).getPagamento());
             labe4 = new Label(TablePosition.TIPO.getValue(),i,clientes.get(i-1).getTipoPagamento());
 
@@ -242,6 +329,14 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
             labe15 = new Label(TablePosition.INICIO_INITAVIDADE.getValue(), i, clientes.get(i-1).getInicioInatividade());
             labe16 = new Label(TablePosition.FIM_INITAVIDADE.getValue(), i, clientes.get(i-1).getFimInatividade());
 
+            labe20 = new Label(TablePosition.DESCRICAO_SEGUNDA.getValue(), i, clientes.get(i-1).getDescicaoProfutosString(0));
+            labe21 = new Label(TablePosition.DESCRICAO_TERCA.getValue(), i, clientes.get(i-1).getDescicaoProfutosString(1));
+            labe22 = new Label(TablePosition.DESCRICAO_QUARTA.getValue(), i, clientes.get(i-1).getDescicaoProfutosString(2));
+            labe23 = new Label(TablePosition.DESCRICAO_QUINTA.getValue(), i, clientes.get(i-1).getDescicaoProfutosString(3));
+            labe24 = new Label(TablePosition.DESCRICAO_SEXTA.getValue(), i, clientes.get(i-1).getDescicaoProfutosString(4));
+            labe25 = new Label(TablePosition.DESCRICAO_SABADO.getValue(), i, clientes.get(i-1).getDescicaoProfutosString(5));
+            labe26 = new Label(TablePosition.DESCRICAO_DOMINGO.getValue(), i, clientes.get(i-1).getDescicaoProfutosString(6));
+
             try {
                 plan.addCell(label);
                 plan.addCell(labe2);
@@ -262,6 +357,18 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
 
                 plan.addCell(labe15);
                 plan.addCell(labe16);
+
+                plan.addCell(labe17);
+                plan.addCell(labe18);
+                plan.addCell(labe19);
+
+                plan.addCell(labe20);
+                plan.addCell(labe21);
+                plan.addCell(labe22);
+                plan.addCell(labe23);
+                plan.addCell(labe24);
+                plan.addCell(labe25);
+                plan.addCell(labe26);
 
             } catch (RowsExceededException e1) {
                 e1.printStackTrace();
@@ -414,4 +521,17 @@ public class ListaClientesBaseUtil extends DataBaseUtil {
 
     }
 
+    public void guarda_em_ficheiro(Cliente cliente) {
+        try {
+            ClientsManager clientsManager = getData();
+            int position = clientsManager.getPosition(cliente);
+            clientsManager.replaceCliente(position, cliente);
+
+            guarda_em_ficheiro(clientsManager);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (BiffException e) {
+            e.printStackTrace();
+        }
+    }
 }
