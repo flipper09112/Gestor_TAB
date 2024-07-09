@@ -1,4 +1,8 @@
 # Gestor_TAB
+
+# 0. Updates
+Nova versao disponivel aqui https://github.com/flipper09112/mvvmApp
+
 # 1. **Introdução**
 Esta aplicação foi desenvolvida para um cenário de processar dados de uma frota de clientes de uma distribuição ao domicilio de produtos de panificação, pastelaria e derivados.
 
